@@ -1,0 +1,92 @@
+/* styles.css */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 10;
+    padding: 5;
+}
+
+header {
+    color: white;
+    padding: 2em;
+    text-align: center;
+}
+
+header nav a {
+    color: white;
+    margin: 0 10px;
+    text-decoration: none;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+}
+.new {
+    background-color: #0189bd;
+    color: white;
+    padding: 10px;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.new:hover {
+    background-color: #0079a8;
+}
+
+.bott {
+    background-color: #0189bd;
+    color: white;
+    padding: 10px;
+    text-decoration: none;
+    border-radius: 5px;
+    width: 10em; /* Ширина кнопки */
+    height: 3em; /* Высота кнопки */
+}
+
+.bott:hover {
+    background-color: #0079a8;
+}
+
+.home img {
+    transition: transform 0.3s ease; /* Плавный эффект при наведении */
+}
+
+.home img:hover {
+    transform: scale(1.1); /* Увеличение картинки при наведении */
+}
+
+form div {
+    margin-bottom: 15px;
+}
+form label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+form input {
+      padding: 10px;
+      width: 100%;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+}
+
+.logout {
+    background-color: #0189bd;
+    color: white;
+    padding: 10px;
+    text-decoration: none;
+    border-radius: 5px;
+
+}

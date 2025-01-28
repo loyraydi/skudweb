@@ -1,0 +1,137 @@
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+
+{% load custom_filters %}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4>{% if form.instance.pk %}Редактирование пользователя{% else %}Добавление нового пользователя{% endif %}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <!-- Выводим ошибки формы -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+
+                        <!-- Поле для Access Level -->
+                        <div class="mb-3">
+                            <label class="form-label">Access Level</label>
+                            <div class="btn-group" role="group" aria-label="Access Level">
+                                {% for choice in form.access_level.field.choices %}
+                                    <input
+                                        type="checkbox"
+                                        class="btn-check"
+                                        id="btncheck{{ forloop.counter }}"
+                                        name="{{ form.access_level.html_name }}"
+                                        value="{{ choice.0 }}"
+                                        {% if choice.0 in form.access_level.value %}checked{% endif %}
+                                        autocomplete="off"
+                                    >
+                                    <label class="btn btn-outline-primary" for="btncheck{{ forloop.counter }}">
+                                        {{ choice.1 }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                            {% if form.access_level.errors %}
+                                <div class="text-danger">
+                                    {{ form.access_level.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Поле для выбора reg -->
+                        <div class="mb-3">
+                            <label class="form-label">Статус регистрации</label>
+                            <div class="btn-group" role="group" aria-label="Registration Status">
+                                {% for choice in form.reg.field.choices %}
+                                    <input
+                                        type="radio"
+                                        class="btn-check"
+                                        id="regStatus{{ forloop.counter }}"
+                                        name="{{ form.reg.html_name }}"
+                                        value="{{ choice.0 }}"
+                                        {% if form.reg.value|stringformat:"s" == choice.0|stringformat:"s" %}checked{% endif %}
+                                        autocomplete="off"
+                                    >
+                                    <label class="btn btn-outline-primary" for="regStatus{{ forloop.counter }}">
+                                        {{ choice.1 }}
+                                    </label>
+
+                                {% endfor %}
+                            </div>
+                            {% if form.reg.errors %}
+                                <div class="text-danger">
+                                    {{ form.reg.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Выводим все поля формы, кроме code_activation и access_level -->
+                        {% for field in form %}
+                            {% if field.name != 'access_level' and field.name != 'code_activation' and field.name != 'reg' %}
+                                <div class="mb-3">
+                                    {{ field.label_tag }}
+                                    {{ field|add_class:"form-control" }}
+                                    {% if field.errors %}
+                                        <div class="text-danger">
+                                            {{ field.errors|striptags }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                        {% endfor %}
+
+                        <!-- Блок для code_activation -->
+                        <div class="mb-3">
+                            {{ form.code_activation.label_tag }}
+                            <div class="input-group">
+                                {{ form.code_activation|add_class:"form-control" }}
+                                <button type="button" class="btn btn-outline-secondary" onclick="generateCode()">Сгенерировать</button>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-primary" type="submit">Сохранить</button>
+                            <a class="btn btn-secondary" href="{% url 'user_list' %}">Отменить</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Функция генерации случайного 8-символьного кода
+    function generateCode() {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+            code += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        // Устанавливаем значение в поле code_activation
+        document.getElementById('id_code_activation').value = code;
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const radios = document.querySelectorAll('input[name="{{ form.reg.html_name }}"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                console.log(`Выбран статус: ${radio.value}`);
+            });
+        });
+    });
+
+</script>
+
+{% endblock %}

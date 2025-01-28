@@ -1,0 +1,24 @@
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+<h2>Информация о пользователе</h2>
+{% if user %}
+
+    <p><strong>Фио:</strong> {{ user.user_name }}</p>
+
+    {% if cars %}
+        <p><strong>ID:</strong> {{ cars.id_user }}</p>
+        <p><strong>Номер машины:</strong> {{ cars.car_plate_number }}</p>
+        <p><strong>Марка:</strong> {{ cars.brand_model }}</p>
+        <p><strong>Цвет:</strong> {{ cars.color }}</p>
+        <p><strong>Время доступа:</strong> {{ cars.time_access }}</p>
+    {% else %}
+        <p>Информации нет.</p>
+    {% endif %}
+{% else %}
+    <p>Не найдена.</p>
+{% endif %}
+
+    <a class = 'bott' href="{% url 'user_list' %}">Вернуться к списку пользователей</a>
+
+{% endblock %}

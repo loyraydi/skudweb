@@ -1,0 +1,42 @@
+<!-- myapp/templates/myapp/user_form.html -->
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+<h2>{% if form.instance.pk %}Редактирование пользователя{% else %}Добавление нового пользователя{% endif %}</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <!-- Выводим все поля формы, кроме code_activation -->
+    {% for field in form %}
+        {% if field.name != 'code_activation' %}
+            <div>{{ field.label_tag }} {{ field }}</div>
+        {% endif %}
+    {% endfor %}
+
+
+    <!-- Отдельный блок для code_activation с кнопкой генерации -->
+    <div style="display: flex; align-items: center; gap: 5px;">
+        {{ form.code_activation.label_tag }}
+        {{ form.code_activation }}
+        <button class = "bott" type="button" onclick="generateCode()" style="padding: 5px 10px;">Сгенерировать код</button>
+    </div>
+
+    <button class = "bott" type="submit">Сохранить</button>
+    <a class = "bott" href="{% url 'user_list' %}">Отменить</a>
+</form>
+
+<script>
+    // Функция генерации случайного 8-символьного кода
+    function generateCode() {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+            code += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        // Устанавливаем значение в поле code_activation
+        document.getElementById('id_code_activation').value = code;
+    }
+</script>
+
+{% endblock %}

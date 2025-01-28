@@ -1,0 +1,350 @@
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+
+{% load custom_filters %}
+
+<style>
+    #notification {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 1050;
+        max-width: 264px; /* Ограничиваем ширину уведомления */
+    }
+
+    .alert-dismissible {
+        padding-right: 3rem;
+    }
+
+    .alert-dismissible .btn-close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    .input-group-text {
+        background-color: #1b1c1c;
+        cursor: pointer;
+    }
+    .input-group-text:hover {
+        background-color: #515152;
+    }
+</style>
+
+<div class="container">
+    <div id="notification" class="alert d-none" role="alert"></div>
+    <h1 class="mb-4">Пользователи</h1>
+    <!-- Таблица пользователей -->
+    <div class="mb-4">
+        <a class = "btn btn-primary"  href="{% url 'user_create' %}">Добавить нового пользователя</a>
+        <!-- Кнопка для открытия модального окна -->
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createSuperUserModal">
+            Добавить суперпользователя
+        </button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#superUserModal" onclick="loadSuperUsers()">
+            Показать суперпользователей
+        </button>
+    </div>
+    <form method="get" class="mb-4">
+        <div class="input-group">
+            <input  type="text" name="q" class="form-control" placeholder="Поиск..." value="{{ request.GET.q }}">
+            <button type="submit" class="btn btn-primary">Поиск</button>
+        </div>
+    </form>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ФИО</th>
+                <th style="width: 140px;">Депаратамент</th>
+                <th>Телефон</th>
+                <th>Почта</th>
+                <th>Уровень доступа</th>
+                <th>Дейстие</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.user_name }}</td>
+                    <td style="width: 140px;">{{ user.departments }}</td>
+                    <td>{{ user.phone_number }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.access_level }}</td>
+                    <td>
+                        <div class="d-flex">
+                            <a class = "btn btn-primary me-2 mb-2"  href="{% url 'user_about' user.pk %}">Подробнее</a>
+                            <a class = "btn btn-primary mb-2 me-2"  href="{% url 'user_update' user.pk %}">Редактировать</a>
+                            <button class="btn btn-danger mb-2 me-2" data-bs-toggle="modal"
+                                    data-bs-target="#deleteModal"
+                                    data-user-id="{{ user.id_user }}"
+                                    data-user-name="{{ user.user_name }}">
+                                Удалить
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6">Ничего не найдено.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        {% if users.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page=1" aria-label="First">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ users.previous_page_number }}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        {% endif %}
+        <li class="page-item disabled">
+            <span class="page-link">Page {{ users.number }} of {{ users.paginator.num_pages }}</span>
+        </li>
+        {% if users.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ users.next_page_number }}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ users.paginator.num_pages }}" aria-label="Last">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+
+<!-- Модальное окно -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Подтвердить удаление</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Вы действительно хотите удалить пользователя. <strong id="modalUserName"></strong> ?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отменить</button>
+                <form id="deleteForm" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Удалить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Модальное окно для отображения суп.польз -->
+<div class="modal fade" id="superUserModal" tabindex="-1" aria-labelledby="superUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="superUserModalLabel">Список суперпользователей</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <ul id="superUserList" class="list-group">
+                    <!-- Список суперпользователей будет загружен сюда -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для создания пользователя -->
+<div class="modal fade" id="createSuperUserModal" tabindex="-1" aria-labelledby="createSuperUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createSuperUserModalLabel">Создать суперпользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createSuperUserForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Логин</label>
+                        <input type="text" id="username" name="username" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" id="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="mb-3 position-relative">
+                        <label for="password" class="form-label">Пароль</label>
+                        <div class="input-group">
+                            <input type="password" id="password" name="password" class="form-control" required>
+                            <span class="input-group-text" onclick="togglePasswordVisibility('password', this)" style="cursor: pointer;">
+                                <i class="bi bi-eye"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-3 position-relative">
+                        <label for="repeat_password" class="form-label">Повторите пароль</label>
+                        <div class="input-group">
+                            <input type="password" id="repeat_password" name="repeat_password" class="form-control" required>
+                            <span class="input-group-text" onclick="togglePasswordVisibility('repeat_password', this)" style="cursor: pointer;">
+                                <i class="bi bi-eye"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="first_name" class="form-label">Имя</label>
+                        <input type="text" id="first_name" name="first_name" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="last_name" class="form-label">Фамилия</label>
+                        <input type="text" id="last_name" name="last_name" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Создать</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;  // Кнопка, вызвавшая модальное окно
+        const userId = button.getAttribute('data-user-id');
+        const userName = button.getAttribute('data-user-name');
+
+        // Обновляем содержимое модального окна
+        const modalUserName = document.getElementById('modalUserName');
+        modalUserName.textContent = userName;
+
+        // Устанавливаем URL действия формы
+        const deleteForm = document.getElementById('deleteForm');
+        deleteForm.action = `/users/delete/${userId}/`;
+    });
+    function showNotification(message, type = 'success') {
+    const notification = document.getElementById('notification');
+
+    if (!notification) {
+        console.error('Элемент для уведомлений (id="notification") не найден.');
+        return;
+    }
+
+    notification.textContent = message;
+    notification.className = `alert alert-${type} alert-dismissible fade show`; // Bootstrap стили
+    notification.classList.remove('d-none'); // Показываем уведомление
+
+    // Автоматическое скрытие уведомления через 5 секунд
+    setTimeout(() => {
+        notification.classList.add('d-none');
+        notification.className = 'alert d-none'; // Сбрасываем стили
+        notification.textContent = '';
+    }, 5000);
+    }
+
+    document.getElementById('createSuperUserForm').addEventListener('submit', function (e) {
+    e.preventDefault(); // Отключаем стандартное поведение формы
+
+    const form = this;
+    const password = document.getElementById('password').value;
+    const repeatPassword = document.getElementById('repeat_password').value;
+
+    // Проверяем совпадение паролей
+    if (password !== repeatPassword) {
+        showNotification('Пароли не совпадают. Попробуйте ещё раз.', 'danger');
+        return;
+    }
+
+    const data = new FormData(form);
+    fetch("{% url 'create_superuser_ajax' %}", {
+        method: "POST",
+        body: data,
+        headers: {
+            "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            form.reset(); // Очищаем форму
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createSuperUserModal'));
+            modal.hide();
+
+            document.body.classList.remove('modal-open');
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) backdrop.remove();
+        } else {
+            showNotification(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Произошла ошибка. Попробуйте ещё раз.', 'danger');
+        console.error('Ошибка:', error);
+    });
+});
+    document.addEventListener('hidden.bs.modal', function (event) {
+    const modal = event.target;
+    if (modal.id === 'createSuperUserModal') {
+        // Очищаем форму при повторном открытии
+        document.getElementById('createSuperUserForm').reset();
+
+        // Удаляем остаточные классы и элементы, если есть
+        document.body.classList.remove('modal-open');
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) backdrop.remove();
+    }
+});
+    function togglePasswordVisibility(fieldId, element) {
+    const field = document.getElementById(fieldId);
+    const icon = element.querySelector('i');
+
+    if (field.type === "password") {
+        field.type = "text";
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        field.type = "password";
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+    function loadSuperUsers() {
+    fetch("{% url 'get_superusers' %}")
+        .then(response => response.json())
+        .then(data => {
+            const superUserList = document.getElementById('superUserList');
+            superUserList.innerHTML = ''; // Очищаем список
+
+            if (data.superusers && data.superusers.length > 0) {
+                data.superusers.forEach(user => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item';
+                    listItem.textContent = `${user.username} (${user.email || 'без email'})`;
+                    superUserList.appendChild(listItem);
+                });
+            } else {
+                const noUsersItem = document.createElement('li');
+                noUsersItem.className = 'list-group-item text-danger';
+                noUsersItem.textContent = 'Суперпользователи не найдены.';
+                superUserList.appendChild(noUsersItem);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки суперпользователей:', error);
+            const superUserList = document.getElementById('superUserList');
+            superUserList.innerHTML = '<li class="list-group-item text-danger">Не удалось загрузить список суперпользователей.</li>';
+        });
+}
+</script>
+
+
+
+{% endblock %}

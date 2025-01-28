@@ -1,0 +1,12 @@
+<!-- myapp/templates/myapp/user_confirm_delete.html -->
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+<h2>Удаление</h2>
+<p>Вы дейстительно хотите удалить пользователя: "{{ user.user_name }}"?</p>
+<form method="post">
+    {% csrf_token %}
+    <button class = "bott"  type="submit" class="btn btn-danger">Удалить</button>
+    <a class = "bott"  href="{% url 'user_list' %}" class="btn btn-secondary">Отмена</a>
+</form>
+{% endblock %}

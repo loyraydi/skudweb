@@ -1,0 +1,35 @@
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+
+<h2>Пользователи</h2>
+<a class = "new"  href="{% url 'user_create' %}">Добавить нового пользователя</a>
+<table class="table">
+    <tr class="table-dark">
+        <th>ФИО</th>
+        <th>Депаратамент</th>
+        <th>Телефон</th>
+        <th>Почта</th>
+        <th>Уровень доступа</th>
+        <th>Дейстие</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+        <td>{{ user.user_name }}</td>
+        <td>{{ user.departments }}</td>
+        <td>{{ user.phone_number }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.access_level }}</td>
+        <td>
+            <a class = "bott"  href="{% url 'user_about' user.pk %}">Подробнее</a>
+            <a class = "bott"  href="{% url 'user_update' user.pk %}">Редактировать</a>
+            <a class = "bott"  href="{% url 'user_delete' user.pk %}">Удалить</a>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="5">Пользователь не найден</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
