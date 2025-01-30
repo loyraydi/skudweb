@@ -1,7 +1,7 @@
 {% extends 'myapp/base.html' %}
 
 {% block content %}
-{% load static %}
+
 {% load custom_filters %}
 
 <style>
@@ -28,31 +28,6 @@
     }
     .input-group-text:hover {
         background-color: #515152;
-    }
-    /* Стили для свернутого меню */
-    #sidebarMenu.collapsed {
-      width: 80px; /* Ширина свернутого меню */
-      transition: width 0.3s ease;
-    }
-
-    #sidebarMenu.collapsed .menu-text {
-      display: none; /* Скрываем текст */
-    }
-
-    #sidebarMenu.collapsed .offcanvas-title {
-      display: none; /* Скрываем заголовок */
-    }
-
-    #sidebarMenu.collapsed .btn-close {
-      display: none; /* Скрываем кнопку закрытия */
-    }
-
-    #sidebarMenu.collapsed .nav-item {
-      text-align: center; /* Центрируем иконки */
-    }
-
-    #sidebarMenu.collapsed .nav-item .btn {
-      justify-content: center; /* Центрируем иконки в кнопках */
     }
 </style>
 
@@ -178,18 +153,18 @@
 </div>
 
 <!-- Боковое меню -->
-<div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarMenu" style="width: 280px;">
-  <div class="offcanvas-header border-bottom border-secondary">
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu">
+  <div class="offcanvas-header bg-dark text-white border-bottom border-secondary">
     <h5 class="offcanvas-title">Меню</h5>
     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
   </div>
-  <div class="offcanvas-body p-0 d-flex flex-column">
-    <ul class="nav nav-pills flex-column mb-auto p-3" id="menuContent">
+  <div class="offcanvas-body bg-dark p-0 d-flex flex-column">
+    <ul class="nav nav-pills flex-column mb-auto p-3">
       <!-- Кнопка "Добавить нового пользователя" -->
       <li class="nav-item mb-2">
         <a class="btn btn-outline-light w-100 text-start d-flex align-items-center" href="{% url 'user_create' %}">
           <i class="bi bi-person-plus me-2"></i>
-          <span class="menu-text">Добавить нового пользователя</span>
+          Добавить нового пользователя
         </a>
       </li>
 
@@ -197,7 +172,7 @@
       <li class="nav-item mb-2">
         <button type="button" class="btn btn-outline-light w-100 text-start d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createSuperUserModal">
           <i class="bi bi-person-fill-gear me-2"></i>
-          <span class="menu-text">Добавить суперпользователя</span>
+          Добавить суперпользователя
         </button>
       </li>
 
@@ -205,7 +180,7 @@
       <li class="nav-item mb-2">
         <button type="button" class="btn btn-outline-light w-100 text-start d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#superUserModal" onclick="loadSuperUsers()">
           <i class="bi bi-people-fill me-2"></i>
-          <span class="menu-text">Показать суперпользователей</span>
+          Показать суперпользователей
         </button>
       </li>
 
@@ -216,7 +191,7 @@
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-danger w-100 text-start d-flex align-items-center">
               <i class="bi bi-box-arrow-right me-2"></i>
-              <span class="menu-text">Выйти</span>
+              Выйти
             </button>
           </form>
         {% endif %}
@@ -225,10 +200,7 @@
 
     <!-- Дополнительный контент (если нужен) -->
     <div class="p-3 border-top border-secondary mt-auto">
-      <a href="/" class="mb-3 me-2 mb-md-0 text-body-secondary text-decoration-none lh-1">
-        <img class="bi" width="42" height="24" src="{% static 'img/fav.svg' %}"></img>
-      </a>
-        <span class="mb-3 mb-md-0 text-body-secondary">© 2025 ver 1.1</span>
+      <small class="text-white-50">Ваш текст или логотип</small>
     </div>
   </div>
 </div>
@@ -414,14 +386,7 @@
             superUserList.innerHTML = '<li class="list-group-item text-danger">Не удалось загрузить список суперпользователей.</li>';
         });
 }
-    document.addEventListener('DOMContentLoaded', function () {
-      const toggleMenuButton = document.getElementById('toggleMenu');
-      const sidebarMenu = document.getElementById('sidebarMenu');
 
-      toggleMenuButton.addEventListener('click', function () {
-        sidebarMenu.classList.toggle('collapsed');
-      });
-    });
 </script>
 
 
