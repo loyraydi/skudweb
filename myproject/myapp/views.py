@@ -2,7 +2,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
-from .models import СustomUser, Car_access
+from .models import СustomUser, Car_access, Logg
 from .forms import UserForm, CarsForm, CustomAuthenticationForm, AdminUserCreationForm
 from .filters import UserFilter
 from django.db.models import Q
@@ -12,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
+
 
 
 
@@ -144,3 +145,20 @@ def create_superuser_ajax(request):
 def get_superusers(request):
     superusers = User.objects.filter(is_superuser=True).values('username', 'email')
     return JsonResponse({'superusers': list(superusers)})
+
+
+@login_required
+def log_list_ajax(request):
+    search_query = request.GET.get('search', '')
+    sort_by = request.GET.get('sort', 'datetime')
+
+    logs = Logg.objects.all()
+
+    if search_query:
+        logs = logs.filter(
+            Q(message__icontains=search_query) | Q(level__icontains=search_query)
+        )
+
+    logs = logs.order_by(sort_by)
+
+    return render(request, 'partials/log_list_table.html', {'logs': logs})

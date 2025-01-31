@@ -1,0 +1,11 @@
+{% for log in logs %}
+    <tr>
+        <td>{{ log.datetime }}</td>
+        <td>{{ log.message }}</td>
+        <td>{{ log.auditory_number }}</td>
+    </tr>
+{% empty %}
+    <tr>
+        <td colspan="4" class="text-center">Логи не найдены.</td>
+    </tr>
+{% endfor %}

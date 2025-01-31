@@ -184,6 +184,15 @@
         </button>
       </li>
 
+        <!-- Кнопка "Показать Показать логги" -->
+      <li class="nav-item mb-2">
+          <!-- Кнопка для открытия модального окна -->
+            <button type="button" class="btn btn-outline-light w-100 text-start d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#logsModal">
+                <i class="bi bi-braces-asterisk me-2"></i>
+                Просмотр логов
+            </button>
+      </li>
+
       <!-- Кнопка "Выйти" -->
       <li class="nav-item mb-2">
         {% if user.is_authenticated %}
@@ -252,6 +261,36 @@
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Создать</button>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно -->
+<div class="modal fade" id="logsModal" tabindex="-1" aria-labelledby="logsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logsModalLabel">Логи системы</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Фильтр -->
+                <input type="text" id="logSearch" class="form-control mb-3" placeholder="Поиск по логам...">
+
+                <!-- Таблица логов -->
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th><a href="#" class="log-sort" data-sort="datetime">Время</a></th>
+                            <th><a href="#" class="log-sort" data-sort="message">Сообщение</a></th>
+                            <th><a href="#" class="log-sort" data-sort="auditory_number">Номер аудитории</a></th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr><td colspan="4" class="text-center">Загрузка...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -387,6 +426,39 @@
         });
 }
 
+        $(document).ready(function() {
+            let isLoaded = false;  // Флаг, чтобы предотвратить многократную загрузку
+
+            function loadLogs(search = '', sort = 'datetime') {
+                $.ajax({
+                    url: "{% url 'log_list_ajax' %}",
+                    data: { search: search, sort: sort },
+                    success: function(data) {
+                        $("#logsTableBody").html(data);
+                    }
+                });
+            }
+
+            // Загружаем логи ТОЛЬКО ПРИ ПЕРВОМ ОТКРЫТИИ модального окна
+            $('#logsModal').on('shown.bs.modal', function() {
+                if (!isLoaded) {
+                    loadLogs();
+                    isLoaded = true;
+                }
+            });
+
+            // Обновляем таблицу логов при вводе текста в поиск
+            $('#logSearch').on('input', function() {
+                loadLogs($(this).val());
+            });
+
+            // Сортировка логов
+            $('.log-sort').on('click', function(e) {
+                e.preventDefault();
+                let sort_by = $(this).data('sort');
+                loadLogs($('#logSearch').val(), sort_by);
+            });
+        });
 </script>
 
 

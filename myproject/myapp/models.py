@@ -40,3 +40,16 @@ class Car_access(models.Model):
 
     def __str__(self):
         return self.id_user
+
+
+class Logg(models.Model):
+    datetime = models.CharField(max_length=26)
+    message = models.TextField(max_length=100)
+    auditory_number = models.CharField(max_length=15)
+
+    class Meta:
+
+        db_table = "logg"
+
+    def __str__(self):
+        return f"[{self.datetime}] {self.message}: {self.auditory_number}"
