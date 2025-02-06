@@ -20,42 +20,11 @@
                                 {{ form.non_field_errors }}
                             </div>
                         {% endif %}
-                        <!-- JSON ACESSES -->
-                        <div class="mb-3">
-                            <label class="form-label">Выберите доступы:</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="access" value="#1" id="access1" {% if "#1" in selected_devices %}checked{% endif %}>
-                                <label class="form-check-label" for="access1">Управление шлагбаумом</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="access" value="#2" id="access2" {% if "#2" in selected_devices %}checked{% endif %}>
-                                <label class="form-check-label" for="access2">Управление откатными воротами РТФ</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="access" value="#3" id="access3" {% if "#3" in selected_devices %}checked{% endif %}>
-                                <label class="form-check-label" for="access3">Управление откатными воротами МТ</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="access" value="#4" id="access4" {% if "#4" in selected_devices %}checked{% endif %}>
-                                <label class="form-check-label" for="access4">Управление распашными воротами</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="access" value="#5" id="access5" {% if "#5" in selected_devices %}checked{% endif %}>
-                                <label class="form-check-label" for="access5">СКУД 108 Ключница</label>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="auditoryInput" class="form-label">Введите аудитории (через запятую):</label>
-                            <input type="text" class="form-control" id="auditoryInput" placeholder="025,118,217" value="{{ auditory_input_value }}">
-                        </div>
-
-                        <input type="hidden" id="id_user_acesses" name="user_acesses">
 
                         <!-- Поле для Access Level -->
                         <div class="mb-3">
                             <label class="form-label">Access Level</label>
-                            <div class="btn-group" role="group" aria-label="Access Level">
+                            <div class="btn-group" role="group" aria-label="Уровень пользователя">
                                 {% for choice in form.access_level.field.choices %}
                                     <input
                                         type="checkbox"
@@ -104,6 +73,38 @@
                                 </div>
                             {% endif %}
                         </div>
+
+                        <!-- JSON ACESSES -->
+                        <div class="mb-3">
+                            <label class="form-label">Выберите доступы:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access" value="#1" id="access1" {% if "#1" in selected_devices %}checked{% endif %}>
+                                <label class="form-check-label" for="access1">Управление шлагбаумом</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access" value="#2" id="access2" {% if "#2" in selected_devices %}checked{% endif %}>
+                                <label class="form-check-label" for="access2">Управление откатными воротами РТФ</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access" value="#3" id="access3" {% if "#3" in selected_devices %}checked{% endif %}>
+                                <label class="form-check-label" for="access3">Управление откатными воротами МТ</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access" value="#4" id="access4" {% if "#4" in selected_devices %}checked{% endif %}>
+                                <label class="form-check-label" for="access4">Управление распашными воротами</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access" value="#5" id="access5" {% if "#5" in selected_devices %}checked{% endif %}>
+                                <label class="form-check-label" for="access5">СКУД 108 Ключница</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="auditoryInput" class="form-label">Введите аудитории (через запятую):</label>
+                            <input type="text" class="form-control" id="auditoryInput" placeholder="025,118,217" value="{{ auditory_input_value }}">
+                        </div>
+
+                        <input type="hidden" id="id_user_acesses" name="user_acesses">
 
                         <!-- Выводим все поля формы, кроме code_activation и access_level -->
                         {% for field in form %}
