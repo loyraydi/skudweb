@@ -1,5 +1,6 @@
 from django import template
 from django.utils.safestring import mark_safe
+from datetime import datetime
 
 register = template.Library()
 
@@ -11,3 +12,12 @@ def add_class(field, css_class):
     elif hasattr(field, 'field'):
         field.field.widget.attrs['class'] = css_class
     return field
+
+
+@register.filter
+def format_datetime(value):
+    try:
+        dt_object = datetime.strptime(value, "%Y-%m-%d %H:%M:%S.%f")
+        return dt_object.strftime("%d %B %Y %H:%M")
+    except ValueError:
+        return value  # Если формат неправильный, просто выводим как есть

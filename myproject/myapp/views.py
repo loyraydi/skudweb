@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
-
+import json
 
 
 
@@ -59,10 +59,17 @@ def user_update(request, pk):
     access_level_choices = ['User', 'Admin', 'Kent', 'Alien']
     user = get_object_or_404(СustomUser, pk=pk)
     form = UserForm(request.POST or None, instance=user)
+    devices = user.user_acesses.get('devices', [])
+    auditory = user.user_acesses.get('auditory', [])
+
+    # Преобразуем аудиторные данные в строку для поля ввода
+    auditory_input_value = ",".join(auditory)
+
     if form.is_valid():
         form.save()
         return redirect('user_list')
-    return render(request, 'myapp/product_form.html', {'form': form, 'access_level_choices': access_level_choices})
+
+    return render(request, 'myapp/product_form.html', {'form': form, 'access_level_choices': access_level_choices, 'selected_devices': devices,'auditory_input_value': auditory_input_value})
 
 
 @login_required
@@ -162,3 +169,25 @@ def log_list_ajax(request):
     logs = logs.order_by(sort_by)
 
     return render(request, 'partials/log_list_table.html', {'logs': logs})
+
+
+@login_required
+def save_user(request):
+    if request.method == "POST":
+        form = UserForm(request.POST)
+
+        if form.is_valid():
+            user = form.save(commit=False)
+            user_acesses = request.POST.get('user_acesses')
+
+            # Преобразуем строку JSON обратно в объект
+            if user_acesses:
+                user_acesses_data = json.loads(user_acesses)
+                user.user_acesses = user_acesses_data
+            else:
+                user.user_acesses = {}
+
+            user.save()
+            return redirect('product_list')  # Перенаправляем на страницу списка пользователей
+
+    return render(request, 'myapp/product_form.html', {'form': form})

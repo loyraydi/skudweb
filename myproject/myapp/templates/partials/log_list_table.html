@@ -1,6 +1,8 @@
+{% load custom_filters %}
+
 {% for log in logs %}
     <tr>
-        <td>{{ log.datetime }}</td>
+        <td>{{ log.datetime|format_datetime  }}</td>
         <td>{{ log.message }}</td>
         <td>{{ log.auditory_number }}</td>
     </tr>

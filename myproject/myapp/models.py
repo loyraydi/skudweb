@@ -20,6 +20,7 @@ class СustomUser(models.Model):
     phone_number = models.CharField(max_length=100, blank=True, null=True,verbose_name='Номер телефона')
     email = models.EmailField(blank=True, null=True,verbose_name='Эл.почта')
     telegram = models.BigIntegerField(blank=True, null=True,verbose_name='Telegram ID')
+    user_acesses = models.JSONField(blank=True,null=True,default=dict, verbose_name='Доступы')
 
     class Meta:
         db_table = 'users'
