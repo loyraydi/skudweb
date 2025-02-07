@@ -191,3 +191,41 @@ def save_user(request):
             return redirect('product_list')  # Перенаправляем на страницу списка пользователей
 
     return render(request, 'myapp/product_form.html', {'form': form})
+
+
+@login_required
+def edit_access(request, user_id):
+    user = get_object_or_404(СustomUser, id_user=user_id)
+    car_access = Car_access.objects.filter(id_user=user_id).first()
+
+    # Если данные уже сохранены, разбиваем их на отдельные части (дни и время)
+    if car_access:
+        selected_days = car_access.time_access.split(';')[0].split(',')
+        start_time, end_time = car_access.time_access.split(';')[1].split(',')
+    else:
+        selected_days = []
+        start_time = ''
+        end_time = ''
+
+    if request.method == "POST":
+        selected_days = request.POST.getlist("days")
+        start_time = request.POST.get("start_time")
+        end_time = request.POST.get("end_time")
+
+        if selected_days and start_time and end_time:
+            formatted_access = f"{','.join(selected_days)};{start_time},{end_time}"
+            if car_access:
+                car_access.time_access = formatted_access
+                car_access.save()
+            else:
+                Car_access.objects.create(user=user, time_access=formatted_access)
+
+            return redirect('user_about', user_id=user_id)
+
+    return render(request, "myapp/edit_access.html", {
+        "user": user,
+        "car_access": car_access,
+        "selected_days": selected_days,
+        "start_time": start_time,
+        "end_time": end_time
+    })

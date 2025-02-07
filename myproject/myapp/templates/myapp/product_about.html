@@ -11,15 +11,20 @@
         <p><strong>Номер машины:</strong> {{ cars.car_plate_number }}</p>
         <p><strong>Марка:</strong> {{ cars.brand_model }}</p>
         <p><strong>Цвет:</strong> {{ cars.color }}</p>
-        <p><strong>Время доступа:</strong> {{ cars.time_access }}</p>
+        <p><strong>Время доступа:</strong> {{ cars.time_access }}
+
+        </p>
     {% else %}
-        <p>Информации нет.</p>
+        <p><strong>Информации нет. </strong>
+            <a class="btn btn-primary" href="{% url 'edit_access' user.pk %}">Добавить информацию.</a>
+        </p>
     {% endif %}
 {% else %}
     <p>Не найдена.</p>
 {% endif %}
-
-    <a class="btn btn-primary" href="{% url 'user_list' %}">Вернуться к списку пользователей</a>
-
+    <div class="d-grid gap-3 col-3 mjustify-content-md-end">
+        <a class="btn btn-primary" href="{% url 'edit_access' user.pk %}">Настроить доступ к парковке</a>
+        <a class="btn btn-primary" href="{% url 'user_list' %}">Вернуться к списку пользователей</a>
+    </div>
 
 {% endblock %}
