@@ -1,0 +1,56 @@
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+<h2>Настройка доступа для {{ user.user_name }}</h2>
+
+<form method="POST" class="card p-4 shadow-sm">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label" for="days">Выберите дни недели:</label>
+        <div class="row">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Basic checkbox toggle button group">
+                <input type="checkbox" class="btn-check" id="btncheck1" name="days" value="ПН" autocomplete="off" {% if 'ПН' in selected_days %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="btncheck1">Понедельник</label>
+
+                <input type="checkbox" class="btn-check" id="btncheck2" name="days" value="ВТ" autocomplete="off" {% if 'ВТ' in selected_days %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="btncheck2">Вторник</label>
+
+                <input type="checkbox" class="btn-check" id="btncheck3" name="days" value="СР" autocomplete="off" {% if 'СР' in selected_days %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="btncheck3">Среда</label>
+
+                <input type="checkbox" class="btn-check" id="btncheck4" name="days" value="ЧТ" autocomplete="off" {% if 'ЧТ' in selected_days %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="btncheck4">Четверг</label>
+
+                <input type="checkbox" class="btn-check" id="btncheck5" name="days" value="ПТ" autocomplete="off" {% if 'ПТ' in selected_days %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="btncheck5">Пятница</label>
+
+                <input type="checkbox" class="btn-check" id="btncheck6" name="days" value="СБ" autocomplete="off" {% if 'СБ' in selected_days %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="btncheck6">Суббота</label>
+
+                <input type="checkbox" class="btn-check" id="btncheck7" name="days" value="ВС" autocomplete="off" {% if 'ВС' in selected_days %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="btncheck7">Воскресенье</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Время доступа -->
+    <div class="row">
+        <div class="col-md-6">
+            <label class="form-label" for="start_time">Начало доступа:</label>
+            <input type="time" name="start_time" value="{{ start_time }}" required>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label" for="end_time">Конец доступа:</label>
+            <input type="time" name="end_time" value="{{ end_time }}" required>
+        </div>
+    </div>
+    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+        <button type="submit" class="btn btn-primary mt-4 ">Сохранить</button>
+    </div>
+</form>
+
+<a class="btn btn-secondary mt-4" href="{% url 'user_about' user.pk %}">Назад</a>
+
+{% endblock %}

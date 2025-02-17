@@ -19,7 +19,7 @@
 
     .alert-dismissible .btn-close {
         position: absolute;
-        top: 10px;
+        top: 10px;s
         right: 10px;
     }
     .input-group-text {
@@ -135,24 +135,9 @@
         </div>
     </div>
 </div>
-<!-- Модальное окно для отображения суп.польз -->
-<div class="modal fade" id="superUserModal" tabindex="-1" aria-labelledby="superUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="superUserModalLabel">Список суперпользователей</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <ul id="superUserList" class="list-group">
-                    <!-- Список суперпользователей будет загружен сюда -->
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Боковое меню -->
+
+<!-- Боковое меню
 <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu">
   <div class="offcanvas-header bg-dark text-white border-bottom border-secondary">
     <h5 class="offcanvas-title">Меню</h5>
@@ -160,7 +145,7 @@
   </div>
   <div class="offcanvas-body bg-dark p-0 d-flex flex-column">
     <ul class="nav nav-pills flex-column mb-auto p-3">
-      <!-- Кнопка "Добавить нового пользователя" -->
+      <!-- Кнопка "Добавить нового пользователя"
       <li class="nav-item mb-2">
         <a class="btn btn-outline-light w-100 text-start d-flex align-items-center" href="{% url 'user_create' %}">
           <i class="bi bi-person-plus me-2"></i>
@@ -168,7 +153,7 @@
         </a>
       </li>
 
-      <!-- Кнопка "Добавить суперпользователя" -->
+      <!-- Кнопка "Добавить суперпользователя"
       <li class="nav-item mb-2">
         <button type="button" class="btn btn-outline-light w-100 text-start d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createSuperUserModal">
           <i class="bi bi-person-fill-gear me-2"></i>
@@ -176,7 +161,7 @@
         </button>
       </li>
 
-      <!-- Кнопка "Показать суперпользователей" -->
+      <!-- Кнопка "Показать суперпользователей"
       <li class="nav-item mb-2">
         <button type="button" class="btn btn-outline-light w-100 text-start d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#superUserModal" onclick="loadSuperUsers()">
           <i class="bi bi-people-fill me-2"></i>
@@ -184,16 +169,16 @@
         </button>
       </li>
 
-        <!-- Кнопка "Показать Показать логги" -->
+        <!-- Кнопка "Показать Показать логги"
       <li class="nav-item mb-2">
-          <!-- Кнопка для открытия модального окна -->
+          <!-- Кнопка для открытия модального окна
             <button type="button" class="btn btn-outline-light w-100 text-start d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#logsModal">
                 <i class="bi bi-braces-asterisk me-2"></i>
                 Просмотр логов
             </button>
       </li>
 
-      <!-- Кнопка "Выйти" -->
+      <!-- Кнопка "Выйти"
       <li class="nav-item mb-2">
         {% if user.is_authenticated %}
           <form method="post" action="{% url 'logout' %}" class="w-100">
@@ -207,94 +192,14 @@
       </li>
     </ul>
 
-    <!-- Дополнительный контент (если нужен) -->
+    <!-- Дополнительный контент (если нужен)
     <div class="p-3 border-top border-secondary mt-auto">
       <small class="text-white-50">Ваш текст или логотип</small>
     </div>
   </div>
-</div>
+</div>-->
 
-<!-- Модальное окно для создания пользователя -->
-<div class="modal fade" id="createSuperUserModal" tabindex="-1" aria-labelledby="createSuperUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createSuperUserModalLabel">Создать суперпользователя</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <form id="createSuperUserForm">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Логин</label>
-                        <input type="text" id="username" name="username" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" id="email" name="email" class="form-control" required>
-                    </div>
-                    <div class="mb-3 position-relative">
-                        <label for="password" class="form-label">Пароль</label>
-                        <div class="input-group">
-                            <input type="password" id="password" name="password" class="form-control" required>
-                            <span class="input-group-text" onclick="togglePasswordVisibility('password', this)" style="cursor: pointer;">
-                                <i class="bi bi-eye"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="mb-3 position-relative">
-                        <label for="repeat_password" class="form-label">Повторите пароль</label>
-                        <div class="input-group">
-                            <input type="password" id="repeat_password" name="repeat_password" class="form-control" required>
-                            <span class="input-group-text" onclick="togglePasswordVisibility('repeat_password', this)" style="cursor: pointer;">
-                                <i class="bi bi-eye"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="first_name" class="form-label">Имя</label>
-                        <input type="text" id="first_name" name="first_name" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label for="last_name" class="form-label">Фамилия</label>
-                        <input type="text" id="last_name" name="last_name" class="form-control">
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Создать</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Модальное окно -->
-<div class="modal fade" id="logsModal" tabindex="-1" aria-labelledby="logsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="logsModalLabel">Логи системы</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Фильтр -->
-                <input type="text" id="logSearch" class="form-control mb-3" placeholder="Поиск по логам...">
-
-                <!-- Таблица логов -->
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th><a href="#" class="log-sort" data-sort="datetime">Время</a></th>
-                            <th><a href="#" class="log-sort" data-sort="message">Сообщение</a></th>
-                            <th><a href="#" class="log-sort" data-sort="auditory_number">Номер аудитории</a></th>
-                        </tr>
-                    </thead>
-                    <tbody id="logsTableBody">
-                        <tr><td colspan="4" class="text-center">Загрузка...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script>
     const deleteModal = document.getElementById('deleteModal');
@@ -311,154 +216,7 @@
         const deleteForm = document.getElementById('deleteForm');
         deleteForm.action = `/users/delete/${userId}/`;
     });
-    function showNotification(message, type = 'success') {
-    const notification = document.getElementById('notification');
 
-    if (!notification) {
-        console.error('Элемент для уведомлений (id="notification") не найден.');
-        return;
-    }
-
-    notification.textContent = message;
-    notification.className = `alert alert-${type} alert-dismissible fade show`; // Bootstrap стили
-    notification.classList.remove('d-none'); // Показываем уведомление
-
-    // Автоматическое скрытие уведомления через 5 секунд
-    setTimeout(() => {
-        notification.classList.add('d-none');
-        notification.className = 'alert d-none'; // Сбрасываем стили
-        notification.textContent = '';
-    }, 5000);
-    }
-
-    document.getElementById('createSuperUserForm').addEventListener('submit', function (e) {
-    e.preventDefault(); // Отключаем стандартное поведение формы
-
-    const form = this;
-    const password = document.getElementById('password').value;
-    const repeatPassword = document.getElementById('repeat_password').value;
-
-    // Проверяем совпадение паролей
-    if (password !== repeatPassword) {
-        showNotification('Пароли не совпадают. Попробуйте ещё раз.', 'danger');
-        return;
-    }
-
-    const data = new FormData(form);
-    fetch("{% url 'create_superuser_ajax' %}", {
-        method: "POST",
-        body: data,
-        headers: {
-            "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification(data.message, 'success');
-            form.reset(); // Очищаем форму
-            const modal = bootstrap.Modal.getInstance(document.getElementById('createSuperUserModal'));
-            modal.hide();
-
-            document.body.classList.remove('modal-open');
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) backdrop.remove();
-        } else {
-            showNotification(data.message, 'danger');
-        }
-    })
-    .catch(error => {
-        showNotification('Произошла ошибка. Попробуйте ещё раз.', 'danger');
-        console.error('Ошибка:', error);
-    });
-});
-    document.addEventListener('hidden.bs.modal', function (event) {
-    const modal = event.target;
-    if (modal.id === 'createSuperUserModal') {
-        // Очищаем форму при повторном открытии
-        document.getElementById('createSuperUserForm').reset();
-
-        // Удаляем остаточные классы и элементы, если есть
-        document.body.classList.remove('modal-open');
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) backdrop.remove();
-    }
-});
-    function togglePasswordVisibility(fieldId, element) {
-    const field = document.getElementById(fieldId);
-    const icon = element.querySelector('i');
-
-    if (field.type === "password") {
-        field.type = "text";
-        icon.classList.remove('bi-eye');
-        icon.classList.add('bi-eye-slash');
-    } else {
-        field.type = "password";
-        icon.classList.remove('bi-eye-slash');
-        icon.classList.add('bi-eye');
-    }
-}
-    function loadSuperUsers() {
-    fetch("{% url 'get_superusers' %}")
-        .then(response => response.json())
-        .then(data => {
-            const superUserList = document.getElementById('superUserList');
-            superUserList.innerHTML = ''; // Очищаем список
-
-            if (data.superusers && data.superusers.length > 0) {
-                data.superusers.forEach(user => {
-                    const listItem = document.createElement('li');
-                    listItem.className = 'list-group-item';
-                    listItem.textContent = `${user.username} (${user.email || 'без email'})`;
-                    superUserList.appendChild(listItem);
-                });
-            } else {
-                const noUsersItem = document.createElement('li');
-                noUsersItem.className = 'list-group-item text-danger';
-                noUsersItem.textContent = 'Суперпользователи не найдены.';
-                superUserList.appendChild(noUsersItem);
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка загрузки суперпользователей:', error);
-            const superUserList = document.getElementById('superUserList');
-            superUserList.innerHTML = '<li class="list-group-item text-danger">Не удалось загрузить список суперпользователей.</li>';
-        });
-}
-
-        $(document).ready(function() {
-            let isLoaded = false;  // Флаг, чтобы предотвратить многократную загрузку
-
-            function loadLogs(search = '', sort = 'datetime') {
-                $.ajax({
-                    url: "{% url 'log_list_ajax' %}",
-                    data: { search: search, sort: sort },
-                    success: function(data) {
-                        $("#logsTableBody").html(data);
-                    }
-                });
-            }
-
-            // Загружаем логи ТОЛЬКО ПРИ ПЕРВОМ ОТКРЫТИИ модального окна
-            $('#logsModal').on('shown.bs.modal', function() {
-                if (!isLoaded) {
-                    loadLogs();
-                    isLoaded = true;
-                }
-            });
-
-            // Обновляем таблицу логов при вводе текста в поиск
-            $('#logSearch').on('input', function() {
-                loadLogs($(this).val());
-            });
-
-            // Сортировка логов
-            $('.log-sort').on('click', function(e) {
-                e.preventDefault();
-                let sort_by = $(this).data('sort');
-                loadLogs($('#logSearch').val(), sort_by);
-            });
-        });
 </script>
 
 
