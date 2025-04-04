@@ -39,11 +39,12 @@
         <div class="input-group">
             <input  type="text" name="q" class="form-control" placeholder="Поиск..." value="{{ request.GET.q }}">
             <button type="submit" class="btn btn-primary">Поиск</button>
+            <a class = "btn btn-secondary"  href="{% url 'user_create' %}">Создать пользователя</a>
         </div>
     </form>
 
     <table class="table table-striped">
-        <thead>
+        <thead class="table-dark">
             <tr>
                 <th>ФИО</th>
                 <th style="width: 140px;">Депаратамент</th>
@@ -81,6 +82,24 @@
             {% endfor %}
         </tbody>
     </table>
+    <!-- Модальное окно -->
+    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Добавление / Редактирование пользователя</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Здесь будет загружаться форма через AJAX -->
+                    <div id="userFormContainer">
+                        <p>Загрузка...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 <nav aria-label="Page navigation">
     <ul class="pagination justify-content-center">
@@ -216,9 +235,7 @@
         const deleteForm = document.getElementById('deleteForm');
         deleteForm.action = `/users/delete/${userId}/`;
     });
-
 </script>
-
 
 
 {% endblock %}

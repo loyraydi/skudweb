@@ -2,8 +2,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
-from .models import СustomUser, Car_access, Logg
-from .forms import UserForm, CarsForm, CustomAuthenticationForm, AdminUserCreationForm
+from .models import СustomUser, Car_access, Logg, Device
+from .forms import UserForm, CarsForm, CustomAuthenticationForm, AdminUserCreationForm, DeviceForm
 from .filters import UserFilter
 from django.db.models import Q
 from django.contrib import messages
@@ -12,6 +12,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
+from django.urls import reverse_lazy
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 import json
 
 
@@ -59,8 +61,8 @@ def user_update(request, pk):
     access_level_choices = ['User', 'Admin', 'Kent', 'Alien']
     user = get_object_or_404(СustomUser, pk=pk)
     form = UserForm(request.POST or None, instance=user)
-    devices = user.user_acesses.get('devices', [])
-    auditory = user.user_acesses.get('auditory', [])
+    devices = (user.user_acesses or {}).get('devices', [])
+    auditory = (user.user_acesses or {}).get('auditory', [])
 
     # Преобразуем аудиторные данные в строку для поля ввода
     auditory_input_value = ",".join(auditory)
@@ -229,3 +231,112 @@ def edit_access(request, user_id):
         "start_time": start_time,
         "end_time": end_time
     })
+
+
+"""@login_required
+def device_form(request, device_id=None):
+    device = get_object_or_404(Device, pk=device_id) if device_id else None
+
+    if request.method == "POST":
+        form = DeviceForm(request.POST, instance=device)
+        if form.is_valid():
+            form.save()
+            return redirect("device_list")
+    else:
+        form = DeviceForm(instance=device)
+
+    return render(request, "devices/device_form.html", {"form": form, "device": device})"""
+# Отображение списка девайсов
+@login_required
+def device_list(request):
+    query = request.GET.get('q', '')  # Получение строки поиска
+    device = Device.objects.all()
+
+    if query:
+        device = device.filter(
+            Q(ip__icontains=query) |
+            Q(mac__icontains=query) |
+            Q(name__icontains=query) |
+            Q(device_status__icontains=query) |
+            Q(id_device__icontains=query)  # Добавляем поиск по ID, если нужно
+        )
+
+    paginator = Paginator(device, 10)  # Показывать 10 записей на странице
+    page_number = request.GET.get('page')  # Номер текущей страницы
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'devices/device_list.html', {
+        'device': page_obj,
+        'query': query,
+    })
+
+# Добавление нового пользователя
+def device_add(request):
+    if request.method == 'POST':
+        form = DeviceForm(request.POST)
+        if form.is_valid():
+            form.save()  # Сохраняем форму, если она валидна
+            return redirect('device_list')  # Перенаправляем на страницу списка устройств
+        else:
+            # Отправляем форму с ошибками обратно
+            return render(request, 'devices/device_form.html', {'form': form})
+
+    form = DeviceForm()
+    return render(request, 'devices/device_form.html', {'form': form})
+
+
+def device_edit(request, pk):
+    device = get_object_or_404(Device, pk=pk)
+
+    if request.method == 'POST':
+        form = DeviceForm(request.POST, instance=device)
+        if form.is_valid():
+            form.save()  # Сохраняем изменения в устройстве
+            return redirect('device_list')  # Перенаправляем на страницу списка устройств
+        else:
+            # Отправляем форму с ошибками обратно
+            return render(request, 'devices/device_form.html', {'form': form, 'device': device})
+
+    form = DeviceForm(instance=device)
+    return render(request, 'devices/device_form.html', {'form': form, 'device': device})
+
+@login_required
+def DeviceDeleteView(request, pk):
+    device = get_object_or_404(Device, pk=pk)
+    if request.method == 'POST':
+        device.delete()
+        messages.success(request, f"User {device.name} has been deleted.")
+        return redirect('device_list')
+    return render(request, 'devices/device_confirm_delete.html', {'device': device})
+
+
+@login_required
+def dashboard(request):
+    return render(request, "myapp/dashboard.html")
+
+
+@login_required
+def get_dashboard_data(request):
+    """API для получения последних логов и последнего пользователя."""
+
+    # Получаем последние 5 логов
+    latest_logs = Logg.objects.order_by("-datetime")[:5]
+    logs_data = [
+        {"datetime": log.datetime, "message": log.message, "auditory": log.auditory_number}
+        for log in latest_logs
+    ]
+
+    # Получаем последнего пользователя
+    last_user = СustomUser.objects.order_by("-id_user").first()
+    last_user_data = {
+        "user_name": last_user.user_name if last_user else "Нет пользователей",
+        "occupations": last_user.occupations if last_user else "",
+        "id_user": last_user.id_user if last_user else None,
+    }
+    last_device = Device.objects.order_by("-id_device").first()
+    last_device_data = {
+        "device_name": last_device.name if last_device else "Нет Devices",
+        "activated": last_device.device_activated if last_device else "",
+        "id_device": last_device.id_device if last_device else None,
+    }
+    return JsonResponse({"logs": logs_data, "last_user": last_user_data, "last_device": last_device_data})

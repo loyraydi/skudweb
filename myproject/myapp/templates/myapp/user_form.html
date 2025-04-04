@@ -1,0 +1,19 @@
+<form method="post" id="userForm" action="{% if form.instance.pk %}{% url 'user_update' form.instance.pk %}{% else %}{% url 'user_create' %}{% endif %}">
+  {% csrf_token %}
+  <div class="mb-3">
+    {{ form.user_name.label_tag }}
+    {{ form.user_name|add_class:"form-control" }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.occupations.label_tag }}
+    {{ form.occupations|add_class:"form-control" }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.reg.label_tag }}
+    {{ form.reg|add_class:"form-control" }}
+  </div>
+
+  <button type="submit" class="btn btn-success">Сохранить</button>
+</form>

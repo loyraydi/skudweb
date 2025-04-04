@@ -1,9 +1,10 @@
 # myapp/forms.py
 from django import forms
-from .models import СustomUser, Car_access
+from .models import СustomUser, Car_access, Device
 from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import User
+import json
 
 
 class UserForm(forms.ModelForm):
@@ -62,3 +63,44 @@ class AdminUserCreationForm(forms.ModelForm):
         if password != password_confirm:
             raise forms.ValidationError("Пароли не совпадают")
         return password_confirm
+
+
+class DeviceForm(forms.ModelForm):
+    class Meta:
+        model = Device
+        fields = [
+            "name", "mac", "device_activated", "device_api",
+            "calendar_regular", "calendar_exception", "trying_max"
+        ]
+        widgets = {
+            "device_api": forms.Textarea(attrs={"rows": 3}),
+            "calendar_regular": forms.Textarea(attrs={"rows": 3}),
+            "calendar_exception": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean_mac(self):
+        mac = self.cleaned_data.get("mac")
+        if Device.objects.filter(mac=mac).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Устройство с таким MAC-адресом уже существует.")
+        return mac
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if not instance.token:
+            instance.token = uuid.uuid4().hex  # Генерируем токен если его нет
+        if commit:
+            instance.save()
+        return instance
+def clean_calendar_regular(self):
+    data = self.cleaned_data.get("calendar_regular")
+    try:
+        return json.loads(data) if data else {}
+    except json.JSONDecodeError:
+        raise forms.ValidationError("Ошибка в формате JSON")
+
+def clean_calendar_exception(self):
+    data = self.cleaned_data.get("calendar_exception")
+    try:
+        return json.loads(data) if data else {}
+    except json.JSONDecodeError:
+        raise forms.ValidationError("Ошибка в формате JSON")

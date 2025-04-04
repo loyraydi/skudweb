@@ -1,0 +1,242 @@
+{% extends "myapp/base.html" %}
+
+{% block content %}
+
+<style>
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* 3 колонки */
+        grid-gap: 10px;
+        min-height: 60vh;
+        padding: 20px;
+    }
+
+    .grid-item {
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgb(33, 37, 41);
+        min-height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .placeholder {
+        visibility: hidden; /* По умолчанию скрываем */
+        border: 2px dashed gray;
+        background: rgba(255, 255, 255, 0.1);
+        min-height: 100px;
+    }
+    .edit-mode .placeholder {
+        visibility: visible; /* Показываем в режиме редактирования */
+    }
+    .page-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .button-group {
+        display: flex;
+        gap: 10px; /* Расстояние между кнопками */
+    }
+    .edit-button, .icon-button {
+        font-size: 20px;
+        background: none;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+    }
+    .icon-button:hover {
+        color: #0d6dfb; /* Изменение цвета при наведении */
+    }
+    .icon-button:focus {
+        outline: none;
+    }
+    .edit-button i {
+        color: #ffffff; /* Полупрозрачный белый */
+    }
+
+    .edit-button:hover i {
+        color: #0d6dfb; /* Чистый белый при наведении */
+    }
+</style>
+
+<div class="container">
+
+    <h1 class="page-title">
+        Главная
+        <div class="button-group">
+            <button id="editModeToggle" class="edit-button">
+                <i class='bx bxs-edit-alt'></i>
+            </button>
+            <button id="saveLayout" class="icon-button" style="visibility: hidden;">
+                <i class="bx bx-save"></i>
+            </button>
+        </div>
+    </h1>
+
+
+
+    <div class="grid-container" id="grid">
+        <div class="grid-item" id="lastUserCard">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    Последний зарегистрированный пользователь
+                </div>
+                <div class="card-body">
+                    <p><strong>Имя пользователя:</strong> <span id="last_user_name">Загрузка...</span></p>
+                    <p><strong>Должность:</strong> <span id="last_user_occupations">Загрузка...</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-item" id="deviceCard">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    Последнее зарегистрированное устройство
+                </div>
+                <div class="card-body">
+                    <p><strong>Название устройства:</strong> <span id="last_device_name">Загрузка...</span></p>
+                    <p><strong>Активировано:</strong> <span id="last_device_activated">Загрузка...</span></p>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="grid-item" id="logsCard">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    Последние логи
+                </div>
+                <div class="card-body">
+                    <ul id="logs-list" class="list-group">
+                        <li class="list-group-item">Загрузка логов...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Пустые места для вставки блоков -->
+        <div class="grid-item placeholder"></div>
+        <div class="grid-item placeholder"></div>
+        <div class="grid-item placeholder"></div>
+    </div>
+</div>
+
+<script>
+    let lastUserId = null;  // Переменная для хранения ID последнего пользователя
+    let lastDeviceId = null;
+
+    function fetchDashboardData() {
+        fetch("{% url 'get_dashboard_data' %}")
+            .then(response => response.json())
+            .then(data => {
+                // Проверяем, изменился ли последний пользователь
+                if (data.last_user.id_user !== lastUserId) {
+                    lastUserId = data.last_user.id_user;
+                    document.getElementById("last_user_name").textContent = data.last_user.user_name;
+                    document.getElementById("last_user_occupations").textContent = data.last_user.occupations;
+                }
+                // Обновляем логи
+                let logsList = document.getElementById("logs-list");
+                logsList.innerHTML = "";
+
+                data.logs.forEach(log => {
+                    let listItem = document.createElement("li");
+                    listItem.className = "list-group-item";
+                    listItem.innerHTML = `<strong>[${log.datetime}]</strong> ${log.message} (${log.auditory_number})`;
+                    logsList.appendChild(listItem);
+                });
+            })
+            .catch(error => console.error("Ошибка загрузки данных:", error));
+
+        fetch("{% url 'get_dashboard_data' %}")
+            .then(response => response.json())
+            .then(data => {
+
+                if (data.last_device && data.last_device.id_device) {
+
+                    let deviceCard = document.getElementById("deviceCard");
+                    if (deviceCard) {
+                        document.getElementById("last_device_name").textContent = data.last_device.device_name;
+                        let activatedText = data.last_device.activated ?
+                            '<span class="badge bg-success">Активно</span>' :
+                            '<span class="badge bg-danger">Отключено</span>';
+
+                        document.getElementById("last_device_activated").innerHTML = activatedText;
+                    } else {
+                        console.warn("Элемент #deviceCard не найден в DOM");
+                    }
+                }
+            })
+            .catch(error => console.error("Ошибка загрузки данных:", error));
+    }
+
+    // Запрашиваем данные каждые 5 секунд
+    setInterval(fetchDashboardData, 5000);
+    fetchDashboardData();
+
+    let editMode = false;
+
+    function loadLayout() {
+        let savedLayout = localStorage.getItem("gridLayout");
+        if (savedLayout) {
+            document.getElementById("grid").innerHTML = savedLayout;
+
+            // Проверяем, есть ли все ключевые контейнеры
+            let requiredElements = ["lastUserCard", "deviceCard", "logsCard"];
+            let missingElements = requiredElements.filter(id => !document.getElementById(id));
+
+            if (missingElements.length > 0) {
+                console.warn("Некоторые контейнеры отсутствуют, сбрасываем макет:", missingElements);
+                localStorage.removeItem("gridLayout"); // Удаляем сохраненный макет
+                location.reload(); // Перезагружаем страницу, чтобы вернуть стандартное расположение
+            }
+        }
+    }
+
+    function saveLayout() {
+        localStorage.setItem("gridLayout", document.getElementById("grid").innerHTML);
+    }
+
+    function enableEditing() {
+        editMode = true;
+        new Sortable(document.getElementById("grid"), {
+            animation: 150,
+            ghostClass: "sortable-ghost",
+            filter: ".placeholder",
+            preventOnFilter: false
+        });
+        document.getElementById("saveLayout").style.visibility = "visible";
+    }
+
+    function disableEditing() {
+        editMode = false;
+        document.getElementById("saveLayout").style.visibility = "hidden";
+    }
+
+    document.getElementById("editModeToggle").addEventListener("click", function () {
+        if (!editMode) {
+            enableEditing();
+            this.innerHTML = "<i class='bx bx-check'></i>";  // Изменяем иконку на галочку
+            this.classList.add("btn-danger");
+        } else {
+            disableEditing();
+            this.innerHTML = "<i class='bx bxs-edit-alt'></i>";  // Возвращаем иконку редактирования
+            this.classList.remove("btn-danger");
+        }
+    });
+
+    document.getElementById("saveLayout").addEventListener("click", function () {
+        saveLayout();
+        alert("Расположение блоков сохранено!");
+    });
+
+    // Загружаем сохраненное расположение
+    loadLayout();
+    document.getElementById("editModeToggle").addEventListener("click", function () {
+        document.body.classList.toggle("edit-mode");
+    });
+
+</script>
+{% endblock %}

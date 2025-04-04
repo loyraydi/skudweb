@@ -36,7 +36,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1>'
 ]
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['127.0.0.1']
 
 @csrf_exempt
 def my_view(request):

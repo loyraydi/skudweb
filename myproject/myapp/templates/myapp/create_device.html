@@ -1,0 +1,111 @@
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h2 class="mb-0">Добавление устройства</h2>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <!-- Имя устройства -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Название устройства:</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+
+                        <!-- MAC-адрес -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">MAC-адрес:</label>
+                            <input type="text" name="mac" class="form-control" required>
+                        </div>
+
+                        <!-- Токен -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Токен устройства:</label>
+                            <div class="input-group">
+                                <input type="text" id="token" name="token" class="form-control" value="{{ generated_token }}" readonly>
+                                <button type="button" class="btn btn-outline-secondary" onclick="generateToken()">Сгенерировать</button>
+                            </div>
+                        </div>
+
+                        <!-- Активность устройства -->
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="device_activated" name="device_activated" checked>
+                            <label class="form-check-label" for="device_activated">Активно</label>
+                        </div>
+
+                        <!-- API команды -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Настройки API (JSON):</label>
+                            <textarea name="device_api" class="form-control" rows="4">{{ device_api }}</textarea>
+                        </div>
+
+                        <!-- Календарь работы -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Рабочие дни:</label>
+                            <input type="text" name="open_day" class="form-control" value="{{ calendar_regular.open_day|join:", " }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Время открытия:</label>
+                            <input type="time" name="open_time" class="form-control" value="{{ calendar_regular.open_time }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Дни закрытия:</label>
+                            <input type="text" name="close_day" class="form-control" value="{{ calendar_regular.close_day|join:", " }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Время закрытия:</label>
+                            <input type="time" name="close_time" class="form-control" value="{{ calendar_regular.close_time }}">
+                        </div>
+
+                        <!-- Календарь исключений -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Исключения (дни открытия):</label>
+                            <input type="text" name="exception_open_day" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Исключения (дни закрытия):</label>
+                            <input type="text" name="exception_close_day" class="form-control">
+                        </div>
+
+                        <!-- Максимальное количество попыток -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Максимальные попытки изменения состояния:</label>
+                            <select name="trying_max" class="form-select">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4" selected>4</option>
+                            </select>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="submit" class="btn btn-primary w-100 me-2">Сохранить</button>
+                            <a class="btn btn-secondary w-100" href="{% url 'device_list' %}">Отмена</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function generateToken() {
+        fetch('https://www.random.org/cgi-bin/randbyte?nbytes=32&format=h')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('token').value = data.trim();
+            })
+            .catch(error => console.error('Ошибка генерации токена:', error));
+    }
+</script>
+
+{% endblock %}

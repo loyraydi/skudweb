@@ -1,30 +1,70 @@
 {% extends 'myapp/base.html' %}
 
 {% block content %}
-<h2>Информация о пользователе</h2>
-{% if user %}
 
-    <p><strong>Фио:</strong> {{ user.user_name }}</p>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0">Информация о пользователе</h4>
+                </div>
+                <div class="card-body p-4">
+                    {% if user %}
+                    <div class="mb-3">
+                        <p class="fw-semibold mb-1">ФИО:</p>
+                        <p class="text-muted">{{ user.user_name }}</p>
+                    </div>
 
-    {% if cars %}
-        <p><strong>ID:</strong> {{ cars.id_user }}</p>
-        <p><strong>Номер машины:</strong> {{ cars.car_plate_number }}</p>
-        <p><strong>Марка:</strong> {{ cars.brand_model }}</p>
-        <p><strong>Цвет:</strong> {{ cars.color }}</p>
-        <p><strong>Время доступа:</strong> {{ cars.time_access }}
+                    {% if cars %}
+                    <div class="mb-3">
+                        <p class="fw-semibold mb-1">ID:</p>
+                        <p class="text-muted">{{ cars.id_user }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="fw-semibold mb-1">Номер машины:</p>
+                        <p class="text-muted">{{ cars.car_plate_number }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="fw-semibold mb-1">Марка:</p>
+                        <p class="text-muted">{{ cars.brand_model }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="fw-semibold mb-1">Цвет:</p>
+                        <p class="text-muted">{{ cars.color }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="fw-semibold mb-1">Время доступа:</p>
+                        <p class="text-muted">{{ cars.time_access }}</p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning text-center">
+                        <p class="mb-0"><strong>Информации нет.</strong></p>
+                    </div>
+                    <div class="text-center">
+                        <a class="btn btn-success btn-sm" href="{% url 'edit_access' user.pk %}">
+                            Добавить информацию
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="alert alert-danger text-center">
+                        <p class="mb-0">Пользователь не найден.</p>
+                    </div>
+                    {% endif %}
 
-        </p>
-    {% else %}
-        <p><strong>Информации нет. </strong>
-            <a class="btn btn-primary" href="{% url 'edit_access' user.pk %}">Добавить информацию.</a>
-        </p>
-    {% endif %}
-{% else %}
-    <p>Не найдена.</p>
-{% endif %}
-    <div class="d-grid gap-3 col-3 mjustify-content-md-end">
-        <a class="btn btn-primary" href="{% url 'edit_access' user.pk %}">Настроить доступ к парковке</a>
-        <a class="btn btn-primary" href="{% url 'user_list' %}">Вернуться к списку пользователей</a>
+                    <div class="d-flex justify-content-between mt-4">
+                        <a class="btn btn-outline-primary w-100 me-2" href="{% url 'edit_access' user.pk %}">
+                            Настроить доступ к парковке
+                        </a>
+                        <a class="btn btn-primary w-100" href="{% url 'user_list' %}">
+                            Вернуться к списку пользователей
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
 {% endblock %}

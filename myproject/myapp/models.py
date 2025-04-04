@@ -54,3 +54,30 @@ class Logg(models.Model):
 
     def __str__(self):
         return f"[{self.datetime}] {self.message}: {self.auditory_number}"
+
+
+class Device(models.Model):
+    id_device = models.BigAutoField(primary_key=True)
+    ip = models.CharField(max_length=20, blank=True, null=True)
+    device_activated = models.BooleanField(default=True)
+    mac = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=45)
+    token = models.TextField()
+    tg_token = models.TextField(blank=True, null=True)
+    device_api = models.JSONField()
+    checkable = models.BooleanField(default=True)
+    calendar_regular = models.JSONField()
+    calendar_exception = models.JSONField(blank=True, null=True)
+    period = models.IntegerField(default=0)
+    device_status = models.CharField(max_length=10, blank=True, null=True)
+    trying_open = models.IntegerField(default=0)
+    trying_close = models.IntegerField(default=0)
+    trying_max = models.IntegerField(default=4)
+    trying_delay = models.IntegerField(default=0)
+
+    class Meta:
+
+        db_table = 'devices'
+
+    def __str__(self):
+        return self.name

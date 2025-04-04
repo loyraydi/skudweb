@@ -13,6 +13,24 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="icon" href="{% static 'img/fav.svg' %}"/>
+    <!-- Подключите стили и скрипты CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/mode/javascript/javascript.min.js"></script>
+    <!-- Подключаем Flatpickr (CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- jQuery и jQuery UI (библиотеки для Drag & Resize) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <!-- Стили jQuery UI (чтобы красиво выглядело) -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+    <!-- Подключаем Sortable.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+
+
 </head>
 <body>
 <div class="container-fluid">
@@ -21,10 +39,12 @@
     </header>
 </div>
 
+
+
 <div class="sidebar">
     <div class="top">
         <div class="logo">
-                <a class="navbar-brand d-flex align-items-center" href="{% url 'user_list' %}">
+                <a class="navbar-brand d-flex align-items-center" href="/">
                     <img src="{% static 'img/icones.svg' %}" alt="Домой" style="width: 240px; height: 50px;">
                 </a>
         </div>
@@ -32,11 +52,25 @@
     </div>
     <ul>
         <li>
-            <a href="{% url 'user_create' %}">
-                <i class="bi bi-person-plus"></i>
-                <span class="nav-item">Новый пользователь</span>
+            <a href="/">
+                <i class='bx bxs-home-alt-2'></i>
+                <span class="nav-item">Домой</span>
             </a>
-            <span class="tooltip">Новый пользователь</span>
+            <span class="tooltip">Домой</span>
+        </li>
+        <li>
+            <a href="{% url 'user_list' %}">
+                <i class='bx bxs-user' ></i>
+                <span class="nav-item">Пользователи</span>
+            </a>
+            <span class="tooltip">Пользователи</span>
+        </li>
+        <li>
+            <a href="{% url 'device_list' %}">
+                <i class='bx bx-devices' ></i>
+                <span class="nav-item">Девайсы</span>
+            </a>
+            <span class="tooltip">Девайсы</span>
         </li>
         <li>
             <a href="#" data-bs-toggle="modal" data-bs-target="#createSuperUserModal">
