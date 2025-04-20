@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import User
 import json
-
+import uuid
 
 class UserForm(forms.ModelForm):
     access_level_choices = [
@@ -73,10 +73,21 @@ class DeviceForm(forms.ModelForm):
             "calendar_regular", "calendar_exception", "trying_max"
         ]
         widgets = {
-            "device_api": forms.Textarea(attrs={"rows": 3}),
-            "calendar_regular": forms.Textarea(attrs={"rows": 3}),
-            "calendar_exception": forms.Textarea(attrs={"rows": 3}),
+            'device_api': forms.Textarea(attrs={"rows": 6}),
+            'calendar_regular': forms.HiddenInput(),
+            'calendar_exception': forms.HiddenInput(),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Устанавливаем значение по умолчанию только если форма создаётся, а не редактируется
+        if not self.instance.pk:
+            self.fields['device_api'].initial = json.dumps({
+                "open": [""],
+                "checkabe": "",
+                "commands": [""]
+            }, indent=4)
 
     def clean_mac(self):
         mac = self.cleaned_data.get("mac")
@@ -84,23 +95,24 @@ class DeviceForm(forms.ModelForm):
             raise forms.ValidationError("Устройство с таким MAC-адресом уже существует.")
         return mac
 
+    def clean_calendar_regular(self):
+        data = self.cleaned_data.get("calendar_regular")
+        try:
+            return json.loads(data) if data else {}
+        except json.JSONDecodeError:
+            raise forms.ValidationError("Ошибка в формате JSON")
+
+    def clean_calendar_exception(self):
+        data = self.cleaned_data.get("calendar_exception")
+        try:
+            return json.loads(data) if data else {}
+        except json.JSONDecodeError:
+            raise forms.ValidationError("Ошибка в формате JSON")
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         if not instance.token:
-            instance.token = uuid.uuid4().hex  # Генерируем токен если его нет
+            instance.token = uuid.uuid4().hex
         if commit:
             instance.save()
         return instance
-def clean_calendar_regular(self):
-    data = self.cleaned_data.get("calendar_regular")
-    try:
-        return json.loads(data) if data else {}
-    except json.JSONDecodeError:
-        raise forms.ValidationError("Ошибка в формате JSON")
-
-def clean_calendar_exception(self):
-    data = self.cleaned_data.get("calendar_exception")
-    try:
-        return json.loads(data) if data else {}
-    except json.JSONDecodeError:
-        raise forms.ValidationError("Ошибка в формате JSON")

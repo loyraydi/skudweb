@@ -108,7 +108,7 @@ def custom_login(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('user_list')  # Перенаправляем на домашнюю страницу
+                return redirect('dashboard')  # Перенаправляем на домашнюю страницу
             else:
                 form.add_error(None, 'Неверный логин или пароль.')  # Добавляем сообщение об ошибке
 
@@ -273,15 +273,61 @@ def device_list(request):
 # Добавление нового пользователя
 def device_add(request):
     if request.method == 'POST':
-        form = DeviceForm(request.POST)
-        if form.is_valid():
-            form.save()  # Сохраняем форму, если она валидна
-            return redirect('device_list')  # Перенаправляем на страницу списка устройств
-        else:
-            # Отправляем форму с ошибками обратно
-            return render(request, 'devices/device_form.html', {'form': form})
+        post_data = request.POST.copy()
 
-    form = DeviceForm()
+        # Проверка включения календаря
+        if 'calendar_toggle' in post_data:
+            # Собираем calendar_regular в JSON
+            calendar_regular = {
+                "check_period": "2",
+                "open_day": [day.strip() for day in (post_data.get('open_day') or '').split(',') if day.strip()],
+                "open_time": post_data.get('open_time', ''),
+                "close_day": [day.strip() for day in (post_data.get('close_day') or '').split(',') if day.strip()],
+                "close_time": post_data.get('close_time', '')
+            }
+            post_data['calendar_regular'] = json.dumps(calendar_regular)
+
+            # calendar_exception
+            calendar_exception = {
+                "open_day": [day.strip() for day in (post_data.get('exception_open_day') or '').split(',') if day.strip()],
+                "close_day": [day.strip() for day in (post_data.get('exception_close_day') or '').split(',') if day.strip()],
+            }
+            post_data['calendar_exception'] = json.dumps(calendar_exception)
+        else:
+            post_data['calendar_regular'] = 'null'
+            post_data['calendar_exception'] = 'null'
+
+        # Обработка активности
+        post_data['device_activated'] = 'device_activated' in post_data
+
+        # 💡 Добавим шаблон device_api, если поле пустое
+        device_api_input = post_data.get('device_api', '').strip()
+        if not device_api_input:
+            default_api = {
+                "open": [""],
+                "checkabe": "",
+                "commands": [""]
+            }
+            post_data['device_api'] = json.dumps(default_api)
+        else:
+            try:
+                # Проверка, валиден ли JSON
+                json.loads(device_api_input)
+            except json.JSONDecodeError:
+                form = DeviceForm(post_data)
+                form.add_error('device_api', "Невалидный JSON в API")
+                return render(request, 'devices/device_form.html', {'form': form})
+
+        form = DeviceForm(post_data)
+        if form.is_valid():
+            form.save()
+            return redirect('device_list')
+        else:
+            print("Ошибки формы:", form.errors)
+
+    else:
+        form = DeviceForm()
+
     return render(request, 'devices/device_form.html', {'form': form})
 
 
@@ -289,15 +335,68 @@ def device_edit(request, pk):
     device = get_object_or_404(Device, pk=pk)
 
     if request.method == 'POST':
-        form = DeviceForm(request.POST, instance=device)
-        if form.is_valid():
-            form.save()  # Сохраняем изменения в устройстве
-            return redirect('device_list')  # Перенаправляем на страницу списка устройств
-        else:
-            # Отправляем форму с ошибками обратно
-            return render(request, 'devices/device_form.html', {'form': form, 'device': device})
+        post_data = request.POST.copy()
 
-    form = DeviceForm(instance=device)
+        # Проверка включения календаря
+        if 'calendar_toggle' in post_data:
+            # Собираем calendar_regular в JSON
+            calendar_regular = {
+                "check_period": "2",
+                "open_day": [day.strip() for day in (post_data.get('open_day') or '').split(',') if day.strip()],
+                "open_time": post_data.get('open_time', ''),
+                "close_day": [day.strip() for day in (post_data.get('close_day') or '').split(',') if day.strip()],
+                "close_time": post_data.get('close_time', '')
+            }
+            post_data['calendar_regular'] = json.dumps(calendar_regular)
+
+            # Собираем calendar_exception в JSON
+            calendar_exception = {
+                "open_day": [day.strip() for day in (post_data.get('exception_open_day') or '').split(',') if day.strip()],
+                "close_day": [day.strip() for day in (post_data.get('exception_close_day') or '').split(',') if day.strip()],
+            }
+            post_data['calendar_exception'] = json.dumps(calendar_exception)
+        else:
+            post_data['calendar_regular'] = 'null'
+            post_data['calendar_exception'] = 'null'
+
+        # Обработка флага активности
+        post_data['device_activated'] = 'device_activated' in post_data
+
+        # Проверка валидности JSON для device_api
+        device_api_input = post_data.get('device_api', '').strip()
+        if device_api_input:
+            try:
+                json.loads(device_api_input)
+            except json.JSONDecodeError:
+                form = DeviceForm(post_data, instance=device)
+                form.add_error('device_api', "Невалидный JSON в API")
+                return render(request, 'devices/device_form.html', {'form': form, 'device': device})
+
+        form = DeviceForm(post_data, instance=device)
+        if form.is_valid():
+            form.save()
+            return redirect('device_list')
+        else:
+            print("Ошибки формы:", form.errors)
+
+    else:
+        # Предзаполнение полей из JSON при GET-запросе
+        try:
+            calendar_regular = json.loads(device.calendar_regular) if device.calendar_regular and device.calendar_regular != 'null' else {}
+            calendar_exception = json.loads(device.calendar_exception) if device.calendar_exception and device.calendar_exception != 'null' else {}
+        except json.JSONDecodeError:
+            calendar_regular = {}
+            calendar_exception = {}
+
+        device.open_day = ', '.join(calendar_regular.get('open_day', []))
+        device.open_time = calendar_regular.get('open_time', '')
+        device.close_day = ', '.join(calendar_regular.get('close_day', []))
+        device.close_time = calendar_regular.get('close_time', '')
+        device.exception_open_day = ', '.join(calendar_exception.get('open_day', []))
+        device.exception_close_day = ', '.join(calendar_exception.get('close_day', []))
+
+        form = DeviceForm(instance=device)
+
     return render(request, 'devices/device_form.html', {'form': form, 'device': device})
 
 @login_required

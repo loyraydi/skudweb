@@ -1,117 +1,183 @@
 {% extends 'myapp/base.html' %}
 
+{% load static %}
+{% load widget_tweaks %}
+
 {% block content %}
-<div class="container mt-5">
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-primary text-white text-center py-3">
-          <h2 class="mb-0">
-            {% if form.device.pk %}Редактирование пользователя{% else %}Добавление нового пользователя{% endif %}
-          </h2>
-        </div>
-        <div class="card-body p-4">
-          <form method="post" novalidate>
-            {% csrf_token %}
+<div class="container mt-4">
+  <h2>{{ device.name|default:"Новое устройство" }}</h2>
+  <form method="post">
+    {% csrf_token %}
 
-            <!-- Имя устройства -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Название устройства:</label>
-              <input type="text" name="name" class="form-control" value="{{ device.name|default_if_none:'' }}" required>
-            </div>
-
-            <!-- MAC-адрес -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">MAC-адрес:</label>
-              <input type="text" name="mac" class="form-control" value="{{ device.mac|default_if_none:'' }}" required>
-            </div>
-
-            <!-- Токен (только для отображения) -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Токен устройства:</label>
-              <input type="text" name="token" class="form-control" value="{{ device.token|default_if_none:'' }}" required>
-            </div>
-
-            <!-- Активность устройства -->
-            <div class="form-check form-switch mb-3">
-              <input class="form-check-input" type="checkbox" id="device_activated" name="device_activated" {% if device.device_activated %}checked{% endif %}>
-              <label class="form-check-label" for="device_activated">Активно</label>
-            </div>
-
-            <!-- API команды (простой textarea) -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold" for="device_api">Настройки API (JSON):</label>
-              <textarea id="device_api" name="device_api" class="form-control" rows="6" placeholder="Введите JSON данные здесь">{{ device.device_api|default_if_none:'' }}</textarea>
-            </div>
-
-            <!-- Рабочие дни -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Рабочие дни (через запятую):</label>
-              <input type="text" name="open_day" class="form-control" value="{{ device.calendar_regular.open_day|join:', '|default_if_none:'' }}">
-            </div>
-
-            <!-- Время открытия -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Время открытия (ЧЧ:ММ):</label>
-              <input type="time" name="open_time" class="form-control" value="{{ device.calendar_regular.open_time|default_if_none:'' }}">
-            </div>
-
-            <!-- Дни закрытия -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Дни закрытия (через запятую):</label>
-              <input type="text" name="close_day" class="form-control" value="{{ device.calendar_regular.close_day|join:', '|default_if_none:'' }}">
-            </div>
-
-            <!-- Время закрытия -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Время закрытия (ЧЧ:ММ):</label>
-              <input type="time" name="close_time" class="form-control" value="{{ device.calendar_regular.close_time|default_if_none:'' }}">
-            </div>
-
-            <!-- Исключения (дни открытия) -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Исключения (дни открытия, через запятую):</label>
-              <input type="text" name="exception_open_day" class="form-control" value="{{ device.calendar_exception.open_day|join:', '|default_if_none:'' }}">
-            </div>
-
-            <!-- Исключения (дни закрытия) -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Исключения (дни закрытия, через запятую):</label>
-              <input type="text" name="exception_close_day" class="form-control" value="{{ device.calendar_exception.close_day|join:', '|default_if_none:'' }}">
-            </div>
-
-            <!-- Максимальное количество попыток -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Максимальные попытки изменения состояния:</label>
-              <select name="trying_max" class="form-select">
-                <option value="1" {% if device.trying_max == 1 %}selected{% endif %}>1</option>
-                <option value="2" {% if device.trying_max == 2 %}selected{% endif %}>2</option>
-                <option value="3" {% if device.trying_max == 3 %}selected{% endif %}>3</option>
-                <option value="4" {% if device.trying_max == 4 or device.trying_max is None %}selected{% endif %}>4</option>
-              </select>
-            </div>
-
-            <!-- Кнопки -->
-            <div class="d-flex justify-content-between mt-4">
-              <button type="submit" class="btn btn-primary w-100 me-2">Сохранить</button>
-              <a class="btn btn-secondary w-100" href="{% url 'device_list' %}">Отмена</a>
-            </div>
-
-            {% if form.errors %}
-            <div class="alert alert-danger">
-              <ul>
-                {% for field in form %}
-                {% for error in field.errors %}
-                <li>{{ error }}</li>
-                {% endfor %}
-                {% endfor %}
-              </ul>
-            </div>
-            {% endif %}
-          </form>
-        </div>
-      </div>
+    <div class="mb-3">
+      <label for="id_name" class="form-label">Имя устройства</label>
+      {{ form.name|add_class:"form-control" }}
     </div>
-  </div>
+
+    <div class="mb-3">
+      <label for="id_mac" class="form-label">MAC-адрес</label>
+      {{ form.mac|add_class:"form-control" }}
+    </div>
+
+    <div class="form-check mb-3">
+      {{ form.device_activated|add_class:"form-check-input" }}
+      <label class="form-check-label" for="id_device_activated">
+        Устройство активно
+      </label>
+    </div>
+
+    <!-- Toggle calendar -->
+    <div class="form-check mb-3">
+      <input type="checkbox" name="calendar_toggle" id="calendarToggle" class="form-check-input">
+      <label class="form-check-label" for="calendarToggle">
+        Включить календарь
+      </label>
+    </div>
+
+    <!-- Calendar fields -->
+    <div id="calendarFields" style="display: none;">
+      <div class="mb-3">
+        <label for="id_open_day" class="form-label">Дни открытия (через запятую)</label>
+        <input type="text" name="open_day" id="id_open_day" class="form-control" value="{{ device.open_day|default:'' }}">
+      </div>
+
+      <div class="mb-3">
+        <label for="id_open_time" class="form-label">Время открытия</label>
+        <input type="text" name="open_time" id="id_open_time" class="form-control" value="{{ device.open_time|default:'' }}">
+      </div>
+
+      <div class="mb-3">
+        <label for="id_close_day" class="form-label">Дни закрытия (через запятую)</label>
+        <input type="text" name="close_day" id="id_close_day" class="form-control" value="{{ device.close_day|default:'' }}">
+      </div>
+
+      <div class="mb-3">
+        <label for="id_close_time" class="form-label">Время закрытия</label>
+        <input type="text" name="close_time" id="id_close_time" class="form-control" value="{{ device.close_time|default:'' }}">
+      </div>
+
+      <h5 class="mt-4">Исключения</h5>
+
+      <div class="mb-3">
+        <label for="id_exception_open_day" class="form-label">Дни исключений открытия (через запятую)</label>
+        <input type="text" name="exception_open_day" id="id_exception_open_day" class="form-control" value="{{ device.exception_open_day|default:'' }}">
+      </div>
+
+      <div class="mb-3">
+        <label for="id_exception_close_day" class="form-label">Дни исключений закрытия (через запятую)</label>
+        <input type="text" name="exception_close_day" id="id_exception_close_day" class="form-control" value="{{ device.exception_close_day|default:'' }}">
+      </div>
+
+      <!-- Скрытые поля для JSON -->
+      {{ form.calendar_regular|add_class:"d-none" }}
+      {{ form.calendar_exception|add_class:"d-none" }}
+    </div>
+
+    <!-- Device API with CodeMirror -->
+    <div class="mb-3">
+      <label for="id_device_api" class="form-label">Device API (JSON)</label>
+      {{ form.device_api|add_class:"form-control"|attr:"id:id_device_api" }}
+    </div>
+
+    <div class="mb-3">
+      <label for="id_trying_max" class="form-label">Попыток авторизации</label>
+      {{ form.trying_max|add_class:"form-control" }}
+    </div>
+
+    <button type="submit" class="btn btn-success">Сохранить</button>
+    <a href="{% url 'device_list' %}" class="btn btn-secondary">Назад</a>
+  </form>
 </div>
+
+<!-- CodeMirror + Toggle script -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/dracula.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/brace-fold.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/foldgutter.min.css">
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggle = document.getElementById("calendarToggle");
+    const calendarFields = document.getElementById("calendarFields");
+
+    function updateVisibility() {
+      calendarFields.style.display = toggle.checked ? "block" : "none";
+    }
+
+    toggle.addEventListener("change", updateVisibility);
+
+    // При редактировании: показать календарь если есть данные
+    const openDayValue = document.getElementById("id_open_day")?.value || '';
+    const closeDayValue = document.getElementById("id_close_day")?.value || '';
+    const exceptionOpenDayValue = document.getElementById("id_exception_open_day")?.value || '';
+    const exceptionCloseDayValue = document.getElementById("id_exception_close_day")?.value || '';
+
+    if (openDayValue.trim() !== "" || closeDayValue.trim() !== "" ||
+            exceptionOpenDayValue.trim() !== "" || exceptionCloseDayValue.trim() !== "") {
+      toggle.checked = true;
+    }
+
+    updateVisibility();
+
+    // Улучшенный CodeMirror
+    const deviceApiTextarea = document.getElementById("id_device_api");
+    if (deviceApiTextarea) {
+      // Сначала попробуем распарсить и отформатировать JSON
+      try {
+        let jsonValue = deviceApiTextarea.value;
+        // Удаляем экранированные символы, если они есть
+        if (jsonValue.includes('\\n') || jsonValue.includes('\\"')) {
+          jsonValue = JSON.parse('"' + jsonValue.replace(/"/g, '\\"') + '"');
+        }
+        // Форматируем JSON
+        const parsedJson = JSON.parse(jsonValue);
+        deviceApiTextarea.value = JSON.stringify(parsedJson, null, 2);
+      } catch (e) {
+        console.error("Ошибка форматирования JSON:", e);
+      }
+
+      // Инициализируем CodeMirror
+      const editor = CodeMirror.fromTextArea(deviceApiTextarea, {
+        mode: { name: "javascript", json: true },
+        theme: "dracula",
+        lineNumbers: true,
+        lineWrapping: false,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        indentUnit: 2,
+        tabSize: 2,
+        height: "auto",
+        viewportMargin: Infinity
+      });
+
+      // Добавляем кнопку форматирования
+      const formatButton = document.createElement("button");
+      formatButton.textContent = "Форматировать JSON";
+      formatButton.className = "btn btn-sm btn-secondary mt-2";
+      formatButton.onclick = function(e) {
+        e.preventDefault();
+        try {
+          const value = editor.getValue();
+          const parsedJson = JSON.parse(value);
+          const formattedJson = JSON.stringify(parsedJson, null, 2);
+          editor.setValue(formattedJson);
+        } catch (e) {
+          alert("Невалидный JSON: " + e.message);
+        }
+      };
+
+      // Добавляем кнопку после редактора
+      editor.getWrapperElement().parentNode.insertBefore(
+              formatButton,
+              editor.getWrapperElement().nextSibling
+      );
+    }
+  });
+</script>
 {% endblock %}

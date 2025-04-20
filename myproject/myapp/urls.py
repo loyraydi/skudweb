@@ -4,7 +4,7 @@ from . import views
 from .views import (
     create_superuser_ajax, custom_login, get_superusers, log_list_ajax, edit_access,
     device_list,DeviceDeleteView,device_add,
-    dashboard, get_dashboard_data
+    dashboard, get_dashboard_data, device_edit
 )
 
 urlpatterns = [
@@ -34,5 +34,6 @@ urlpatterns = [
     # 📌 Устройства (Devices)
     path('devices/', device_list, name='device_list'),  # Страница списка устройств
     path('devices/add/', device_add, name='device_add'),  # Страница добавления устройства
+    path('devices/edit/<int:pk>', device_edit, name='device_edit'),  # Страница добавления устройства
     path('devices/delete/<int:pk>/', DeviceDeleteView, name='device_delete'),  # Страница удаления устройства
 ]

@@ -520,6 +520,18 @@
             loadLogs($('#logSearch').val(), sort_by);
         });
     });
+    function initCodeMirrorForTextarea(id) {
+        const textarea = document.getElementById(id);
+        if (textarea) {
+            return CodeMirror.fromTextArea(textarea, {
+                lineNumbers: true,
+                mode: "application/json",
+                theme: "default",
+                tabSize: 2,
+            });
+        }
+        return null;
+    }
 </script>
 
 </body>

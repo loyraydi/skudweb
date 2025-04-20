@@ -33,10 +33,10 @@ SESSION_COOKIE_SECURE=False
 CSRF_COOKIE_SECURE=False
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://127.0.0.1>'
+    'http://10.40.161.50>'
 ]
 
-ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 @csrf_exempt
 def my_view(request):
@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_filters",
     "myapp",
+    'widget_tweaks',
+    'django_json_widget',
 ]
 
 MIDDLEWARE = [
