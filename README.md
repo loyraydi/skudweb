@@ -1,1 +1,5 @@
-# skudweb
+# Skudweb
+
+Структура:
+
+    skudweb
