@@ -2,7 +2,7 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
 from .views import (
-    create_superuser_ajax, custom_login, get_superusers, log_list_ajax, edit_access,
+    create_superuser_ajax, custom_login, get_superuser, log_list_ajax, edit_access,
     device_list,DeviceDeleteView,device_add,
     dashboard, get_dashboard_data, device_edit
 )
@@ -22,8 +22,13 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
 
     # Админка
-    path('create-superuser/', create_superuser_ajax, name='create_superuser_ajax'),
-    path('get-superusers/', get_superusers, name='get_superusers'),
+    path('admin-users/', views.admin_users_page, name='admin_users_page'),
+    path('admin-users/create/', views.create_superuser_ajax, name='create_superuser_ajax'),
+    path('admin-users/list/', views.list_superusers, name='get_superusers'),  # <== Обновлено!
+    path('delete_superuser/<int:user_id>/', views.delete_superuser, name='delete_superuser'),
+    path('get_superuser/<int:user_id>/', views.get_superuser, name='get_superuser'),
+    path('reset_password/<int:user_id>/', views.reset_password, name='reset_password'),
+    path('edit_superuser/<int:user_id>/', views.edit_superuser, name='edit_superuser'),
 
     # Логи
     path('logs/ajax/', log_list_ajax, name='log_list_ajax'),

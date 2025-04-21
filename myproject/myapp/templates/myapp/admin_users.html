@@ -1,0 +1,403 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Список администраторов</h2>
+        <button id="openCreateModalBtn" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createSuperuserModal">
+            <i class="bi bi-plus-lg"></i> Создать администратора
+        </button>
+    </div>
+
+    <div class="card bg-dark text-white">
+        <div class="card-body p-0">
+            <ul id="superuser-list" class="list-group list-group-flush">
+                <!-- Суперпользователи будут добавляться сюда -->
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка для создания/редактирования суперпользователя -->
+<div class="modal fade" id="createSuperuserModal" tabindex="-1" aria-labelledby="createSuperuserLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <form id="createSuperuserForm">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="createSuperuserLabel">Создать суперпользователя</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control bg-dark text-white border-secondary" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Пароль</label>
+                        <input type="password" class="form-control bg-dark text-white border-secondary" name="password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="first_name" class="form-label">Имя</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" name="first_name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="last_name" class="form-label">Фамилия</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" name="last_name">
+                    </div>
+
+                    <!-- Кнопка для сброса пароля -->
+                    <button type="button" class="btn btn-light" id="resetPasswordBtn" style="display:none;">
+                        <i class="bi bi-key"></i> Сбросить пароль
+                    </button>
+
+                    <div id="formError" class="text-danger mt-3"></div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" id="submitBtn" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка для подтверждения удаления -->
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="deleteConfirmationModalLabel">Подтвердите удаление</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span>Вы уверены, что хотите удалить суперпользователя?</span>
+                </div>
+                <p><strong>Имя пользователя:</strong> <span id="deleteUsername"></span></p>
+                <p><strong>Имя:</strong> <span id="deleteFirstName"></span></p>
+                <p><strong>Фамилия:</strong> <span id="deleteLastName"></span></p>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="bi bi-trash"></i> Удалить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('createSuperuserForm');
+        const superuserList = document.getElementById('superuser-list');
+        const errorBlock = document.getElementById('formError');
+        const submitBtn = form.querySelector('#submitBtn');
+
+        let userIdToDelete = null;
+        let usernameToDelete = '';
+        let userFirstNameToDelete = '';
+        let userLastNameToDelete = '';
+
+        function loadSuperusers() {
+            fetch("{% url 'get_superusers' %}")
+                .then(response => response.json())
+                .then(data => {
+                    superuserList.innerHTML = '';
+                    data.superusers.forEach(user => {
+                        const li = document.createElement('li');
+                        li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center', 'mb-2', 'rounded', 'shadow-sm');
+                        li.dataset.userId = user.id;
+                        li.dataset.firstName = user.first_name || '';
+                        li.dataset.lastName = user.last_name || '';
+
+                        // Информация о пользователе с аватаркой
+                        const userInfo = document.createElement('div');
+                        userInfo.classList.add('d-flex', 'align-items-center');
+
+                        // Аватарка
+                        const avatar = document.createElement('div');
+                        avatar.classList.add('avatar-circle', 'me-3');
+                        avatar.textContent = user.first_name.charAt(0).toUpperCase();
+
+                        // Устанавливаем цвет аватарки на основе имени пользователя
+                        const avatarColor = stringToColor(user.first_name || user.username);
+                        avatar.style.backgroundColor = avatarColor;
+
+                        // Текстовая информация
+                        const textInfo = document.createElement('div');
+                        textInfo.innerHTML = `
+                    <h5 class="mb-1">${user.first_name} ${user.last_name}</h5>
+                    <small class="text-muted">${user.email}</small>
+                `;
+
+                        userInfo.appendChild(avatar);
+                        userInfo.appendChild(textInfo);
+
+                        // Кнопки действий
+                        const actionButtons = document.createElement('div');
+                        actionButtons.classList.add('d-flex', 'gap-2'); // Используем gap-2 для отступа между кнопками
+                        actionButtons.innerHTML = `
+                    <button class="btn btn-outline-primary btn-sm edit-btn" title="Редактировать">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm delete-btn" title="Удалить">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                `;
+
+                        li.appendChild(userInfo);
+                        li.appendChild(actionButtons);
+                        superuserList.appendChild(li);
+
+                        li.querySelector('.delete-btn').addEventListener('click', function() {
+                            deleteSuperuser(li.dataset.userId, li.dataset.firstName, li.dataset.lastName);
+                        });
+
+                        li.querySelector('.edit-btn').addEventListener('click', function() {
+                            editSuperuser(li.dataset.userId);
+                        });
+                    });
+                })
+                .catch(error => console.error('Ошибка при загрузке суперпользователей:', error));
+        }
+
+        loadSuperusers();
+
+        function editSuperuser(userId) {
+            fetch(`/get_superuser/${userId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const user = data.user;
+
+                        form.querySelector('[name="username"]').value = user.username;
+                        form.querySelector('[name="email"]').value = user.email;
+                        form.querySelector('[name="first_name"]').value = user.first_name || '';
+                        form.querySelector('[name="last_name"]').value = user.last_name || '';
+                        form.querySelector('[name="password"]').value = '';
+
+                        document.getElementById('resetPasswordBtn').style.display = 'inline-block';
+                        document.getElementById('createSuperuserLabel').textContent = 'Редактировать пользователя';
+
+                        const modal = new bootstrap.Modal(document.getElementById('createSuperuserModal'));
+                        submitBtn.innerHTML = '<i class="bi bi-save"></i> Сохранить';
+                        modal.show();
+
+                        form.dataset.editMode = true;
+                        form.dataset.userId = user.id;
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    showNotification('Ошибка при загрузке данных пользователя', false);
+                });
+        }
+
+        document.getElementById('resetPasswordBtn').addEventListener('click', function() {
+            const newPassword = prompt('Введите новый пароль:');
+            if (newPassword) {
+                fetch(`/reset_password/${form.dataset.userId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ password: newPassword })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        showNotification(
+                            data.success ? 'Пароль успешно сброшен!' : 'Ошибка при сбросе пароля',
+                            data.success
+                        );
+                    })
+                    .catch(error => {
+                        console.error('Ошибка:', error);
+                        showNotification('Произошла ошибка при сбросе пароля', false);
+                    });
+            }
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const url = form.dataset.editMode
+                ? `/edit_superuser/${form.dataset.userId}/`
+                : "{% url 'create_superuser_ajax' %}";
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('createSuperuserModal'));
+                        modal.hide();
+
+                        form.reset();
+                        delete form.dataset.editMode;
+                        delete form.dataset.userId;
+                        submitBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Создать';
+                        document.getElementById('resetPasswordBtn').style.display = 'none';
+                        document.getElementById('createSuperuserLabel').textContent = 'Создать суперпользователя';
+
+                        showNotification(
+                            form.dataset.editMode ? 'Пользователь успешно обновлен!' : 'Пользователь успешно создан!',
+                            true
+                        );
+                        loadSuperusers();
+                    } else {
+                        errorBlock.textContent = data.message || 'Произошла ошибка';
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    errorBlock.textContent = 'Произошла ошибка при отправке данных.';
+                });
+        });
+
+        document.getElementById('createSuperuserModal').addEventListener('hidden.bs.modal', () => {
+            form.reset();
+            delete form.dataset.editMode;
+            delete form.dataset.userId;
+            submitBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Создать';
+            document.getElementById('resetPasswordBtn').style.display = 'none';
+            document.getElementById('createSuperuserLabel').textContent = 'Создать суперпользователя';
+            errorBlock.textContent = '';
+        });
+
+        function deleteSuperuser(userId, username, firstName, lastName) {
+            userIdToDelete = userId;
+            usernameToDelete = username;
+            userFirstNameToDelete = firstName;
+            userLastNameToDelete = lastName;
+
+            document.getElementById('deleteUsername').textContent = usernameToDelete;
+            document.getElementById('deleteFirstName').textContent = userFirstNameToDelete;
+            document.getElementById('deleteLastName').textContent = userLastNameToDelete;
+
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
+            modal.show();
+        }
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            fetch(`/delete_superuser/${userIdToDelete}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification(
+                        data.success ? 'Суперпользователь успешно удален' : 'Ошибка при удалении суперпользователя',
+                        data.success
+                    );
+                    loadSuperusers();
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    showNotification('Произошла ошибка при удалении суперпользователя', false);
+                });
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
+            modal.hide();
+        });
+
+        function showNotification(message, success = true, autoClose = true) {
+            // Определяем тип уведомления
+            const type = success ? 'success' : 'error';
+
+            // Определяем заголовок
+            const title = success ? 'Успешно' : 'Ошибка';
+
+            // Определяем длительность
+            const duration = autoClose ? 3000 : 0;
+
+            // Используем нашу новую систему уведомлений
+            return AppNotifications.show(message, type, title, duration);
+        }
+
+        document.getElementById('openCreateModalBtn')?.addEventListener('click', () => {
+            form.reset();
+            delete form.dataset.editMode;
+            delete form.dataset.userId;
+            submitBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Создать';
+            document.getElementById('resetPasswordBtn').style.display = 'none';
+            document.getElementById('createSuperuserLabel').textContent = 'Создать суперпользователя';
+            errorBlock.textContent = '';
+        });
+    });
+    // Функция для генерации цвета на основе строки
+    function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            const value = (hash >> (i * 8)) & 0xFF;
+            color += ('00' + value.toString(16)).substr(-2);
+        }
+        return color;
+    }
+
+</script>
+
+<style>
+    /* Стили для аватара пользователя */
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        background-color: #3498db;
+        border-radius: 50%;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    /* Стили для кнопок в списке */
+    .btn-group .btn {
+        margin-left: 5px;
+    }
+
+    /* Стили для списка */
+    .list-group-item {
+        transition: all 0.2s ease;
+    }
+
+    .list-group-item:hover {
+        background-color: #2c3034 !important;
+    }
+
+    /* Стили для модальных окон */
+    .modal-content {
+        border: 1px solid #495057;
+    }
+
+    /* Стили для полей ввода */
+    .form-control:focus {
+        background-color: #2c3034;
+        color: white;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+</style>
+
+{% endblock %}

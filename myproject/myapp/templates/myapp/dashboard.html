@@ -59,9 +59,108 @@
     .edit-button:hover i {
         color: #0d6dfb; /* Чистый белый при наведении */
     }
+    #dashboard {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+    }
+
+    .dashboard-container {
+        background-color: #212529;
+        color: white;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        width: auto;
+        max-width: 350px;
+        transform: translateX(100%);
+        opacity: 0;
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        opacity 0.4s ease;
+        border-left: 4px solid #4a6cf7;
+        overflow: hidden;
+    }
+
+    .dashboard.show {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    .dashboard.hide {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    .dashboard-icon {
+        margin-right: 15px;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .dashboard-content {
+        flex-grow: 1;
+    }
+
+    .dashboard-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+        font-size: 16px;
+    }
+
+    .dashboard-message {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    .dashboard-close {
+        cursor: pointer;
+        font-size: 18px;
+        margin-left: 10px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+
+    .dashboard-close:hover {
+        opacity: 1;
+    }
+
+    .dashboard-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background-color: rgba(255, 255, 255, 0.5);
+        width: 100%;
+        transform-origin: left;
+    }
+
+    /* Типы уведомлений */
+    .dashboard-success {
+        border-left-color: #4a6cf7;
+    }
+
+    .dashboard-error {
+        border-left-color: #dc3545;
+    }
+
+    .dashboard-warning {
+        border-left-color: #ffc107;
+    }
+
+    .dashboard-info {
+        border-left-color: #4a6cf7;
+    }
 </style>
 
 <div class="container">
+
+
 
     <h1 class="page-title">
         Главная
@@ -75,7 +174,7 @@
         </div>
     </h1>
 
-
+    <div id="dashboard"></div>
 
     <div class="grid-container" id="grid">
         <div class="grid-item" id="lastUserCard">
@@ -229,7 +328,7 @@
 
     document.getElementById("saveLayout").addEventListener("click", function () {
         saveLayout();
-        alert("Расположение блоков сохранено!");
+        showDashboardNotification("Расположение блоков сохранено!", "success", "Успешно");
     });
 
     // Загружаем сохраненное расположение
@@ -237,6 +336,160 @@
     document.getElementById("editModeToggle").addEventListener("click", function () {
         document.body.classList.toggle("edit-mode");
     });
+    // Функция для создания и показа уведомления
+    function showDashboardNotification(message, type = 'success', title = '', duration = 3000) {
+        // Создаем уникальный контейнер для уведомлений дашборда, если он не существует
+        let container = document.getElementById('dashboard-notifications');
 
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'dashboard-notifications';
+            container.style.position = 'fixed';
+            container.style.bottom = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+        }
+
+        // Создаем уведомление
+        const notification = document.createElement('div');
+        notification.className = `dashboard dashboard-${type}`;
+
+        // Определяем иконку в зависимости от типа
+        let icon = '';
+        switch(type) {
+            case 'success':
+                icon = '<i class="bx bx-check-circle" style="color:#0dc8ee"></i>';
+                break;
+            case 'error':
+                icon = '<i class="bx bx-x-circle" style="color:#dc3545"></i>';
+                break;
+            case 'warning':
+                icon = '<i class="bx bx-error" style="color:#ffc107"></i>';
+                break;
+            case 'info':
+            default:
+                icon = '<i class="bx bx-info-circle" style="color:#0dc8ee"></i>';
+                break;
+        }
+
+        // Создаем содержимое уведомления
+        notification.innerHTML = `
+        <div class="dashboard-icon">${icon}</div>
+        <div class="dashboard-content">
+            ${title ? `<div class="dashboard-title">${title}</div>` : ''}
+            <div class="dashboard-message">${message}</div>
+        </div>
+        <div class="dashboard-close">&times;</div>
+        <div class="dashboard-progress"></div>
+    `;
+
+        // Добавляем стили непосредственно к элементу
+        notification.style.backgroundColor = '#212529';
+        notification.style.color = 'white';
+        notification.style.padding = '15px';
+        notification.style.marginBottom = '10px';
+        notification.style.borderRadius = '8px';
+        notification.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+        notification.style.display = 'flex';
+        notification.style.alignItems = 'center';
+        notification.style.width = 'auto';
+        notification.style.maxWidth = '350px';
+        notification.style.transform = 'translateX(100%)';
+        notification.style.opacity = '0';
+        notification.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease';
+        notification.style.borderLeft = '4px solid #4a6cf7';
+        notification.style.overflow = 'hidden';
+
+        // Добавляем в контейнер
+        container.appendChild(notification);
+
+        // Добавляем обработчик для кнопки закрытия
+        const closeButton = notification.querySelector('.dashboard-close');
+        closeButton.style.cursor = 'pointer';
+        closeButton.style.fontSize = '18px';
+        closeButton.style.marginLeft = '10px';
+        closeButton.style.opacity = '0.7';
+        closeButton.style.transition = 'opacity 0.2s';
+
+        closeButton.addEventListener('click', () => {
+            hideDashboardNotification(notification);
+        });
+
+        // Стили для иконки
+        const iconElement = notification.querySelector('.dashboard-icon');
+        iconElement.style.marginRight = '15px';
+        iconElement.style.fontSize = '20px';
+        iconElement.style.display = 'flex';
+        iconElement.style.alignItems = 'center';
+        iconElement.style.justifyContent = 'center';
+
+        // Стили для контента
+        const contentElement = notification.querySelector('.dashboard-content');
+        contentElement.style.flexGrow = '1';
+
+        // Стили для заголовка
+        if (title) {
+            const titleElement = notification.querySelector('.dashboard-title');
+            titleElement.style.fontWeight = 'bold';
+            titleElement.style.marginBottom = '5px';
+            titleElement.style.fontSize = '16px';
+        }
+
+        // Стили для сообщения
+        const messageElement = notification.querySelector('.dashboard-message');
+        messageElement.style.fontSize = '14px';
+        messageElement.style.opacity = '0.9';
+
+        // Стили для прогресс-бара
+        const progressBar = notification.querySelector('.dashboard-progress');
+        progressBar.style.position = 'absolute';
+        progressBar.style.bottom = '0';
+        progressBar.style.left = '0';
+        progressBar.style.height = '3px';
+        progressBar.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+        progressBar.style.width = '100%';
+        progressBar.style.transformOrigin = 'left';
+
+        // Показываем уведомление с анимацией
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+            notification.style.opacity = '1';
+
+            // Анимируем прогресс-бар
+            if (progressBar && duration > 0) {
+                progressBar.style.transition = `width ${duration}ms linear`;
+                progressBar.style.width = '0';
+            }
+        }, 10);
+
+        // Автоматически скрываем через указанное время
+        if (duration > 0) {
+            setTimeout(() => {
+                hideDashboardNotification(notification);
+            }, duration);
+        }
+
+        // Закрываем по клику
+        notification.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('dashboard-close')) {
+                hideDashboardNotification(notification);
+            }
+        });
+
+        return notification;
+    }
+
+    function hideDashboardNotification(notification) {
+        notification.style.transform = 'translateX(100%)';
+        notification.style.opacity = '0';
+
+        // Удаляем элемент после завершения анимации
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 400);
+    }
 </script>
 {% endblock %}

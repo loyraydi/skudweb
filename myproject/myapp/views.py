@@ -149,12 +149,102 @@ def create_superuser_ajax(request):
 
     return JsonResponse({'success': False, 'message': 'Недопустимый запрос.'}, status=405)
 
+@login_required
+def list_superusers(request):
+    users = User.objects.filter(is_superuser=True)
+    return JsonResponse({
+        'success': True,
+        'superusers': [
+            {
+                'id': u.id,
+                'username': u.username,
+                'email': u.email,
+                'first_name': u.first_name,
+                'last_name': u.last_name,
+            }
+            for u in users
+        ]
+    })
 
 @login_required
-def get_superusers(request):
-    superusers = User.objects.filter(is_superuser=True).values('username', 'email')
-    return JsonResponse({'superusers': list(superusers)})
+def get_superuser(request, user_id):
+    try:
+        user = User.objects.get(id=user_id, is_superuser=True)
+        return JsonResponse({
+            'success': True,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
+        })
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Пользователь не найден'}, status=404)
 
+@login_required
+def delete_superuser(request, user_id):
+    if request.method == 'DELETE':
+        # Находим суперпользователя по user_id
+        user = get_object_or_404(User, id=user_id)
+
+        # Удаляем пользователя
+        try:
+            user.delete()
+            return JsonResponse({'success': True, 'message': 'Суперпользователь удален.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Ошибка: {str(e)}'}, status=500)
+
+    return JsonResponse({'success': False, 'message': 'Неверный метод запроса.'}, status=405)
+
+@login_required
+def admin_users_page(request):
+    return render(request, 'myapp/admin_users.html')
+
+@login_required
+def reset_password(request, user_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            new_password = data.get('password')
+
+            if not new_password:
+                return JsonResponse({'success': False, 'message': 'Пароль обязателен'}, status=400)
+
+            user = User.objects.get(id=user_id, is_superuser=True)
+            user.set_password(new_password)
+            user.save()
+
+            return JsonResponse({'success': True})
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Пользователь не найден'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Некорректный формат данных'}, status=400)
+
+    return JsonResponse({'success': False, 'message': 'Метод не поддерживается'}, status=405)
+
+@login_required
+def edit_superuser(request, user_id):
+    if request.method == 'POST':
+        try:
+            user = User.objects.get(id=user_id, is_superuser=True)
+            user.username = request.POST.get('username')
+            user.email = request.POST.get('email')
+            user.first_name = request.POST.get('first_name')
+            user.last_name = request.POST.get('last_name')
+
+            # Пароль не меняем, если не введён
+            password = request.POST.get('password')
+            if password:
+                user.set_password(password)
+
+            user.save()
+
+            return JsonResponse({'success': True})
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Суперпользователь не найден'}, status=404)
+    return JsonResponse({'success': False, 'message': 'Метод не поддерживается'}, status=405)
 
 @login_required
 def log_list_ajax(request):
