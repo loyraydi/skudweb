@@ -2,7 +2,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
-from .models import СustomUser, Car_access, Logg, Device
+from .models import СustomUser, Car_access, Logg, Device, Logg_parking, Logg_access
 from .forms import UserForm, CarsForm, CustomAuthenticationForm, AdminUserCreationForm, DeviceForm
 from .filters import UserFilter
 from django.db.models import Q
@@ -15,6 +15,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 import json
+from django.views.decorators.http import require_http_methods
 
 
 
@@ -49,43 +50,132 @@ def user_list(request):
 def user_create(request):
     access_level_choices = ['User', 'Admin', 'Kent', 'Alien']
     form = UserForm(request.POST or None)
+
+    # Получаем только устройства со статусом "normal"
+    devices_list = Device.objects.all()
+
     if form.is_valid():
         form.access_level = ','.join(form.cleaned_data['access_level'])
         form.save()
         return redirect('user_list')
-    return render(request, 'myapp/product_form.html', {'form': form, 'access_level_choices': access_level_choices})
 
-# Редактирование пользователя
+    return render(request, 'myapp/product_form.html', {
+        'form': form,
+        'access_level_choices': access_level_choices,
+        'devices_list': devices_list,
+        'selected_devices': []
+    })
+
 @login_required
 def user_update(request, pk):
     access_level_choices = ['User', 'Admin', 'Kent', 'Alien']
     user = get_object_or_404(СustomUser, pk=pk)
     form = UserForm(request.POST or None, instance=user)
-    devices = (user.user_acesses or {}).get('devices', [])
+
+    # Получаем выбранные устройства пользователя
+    selected_devices = (user.user_acesses or {}).get('devices', [])
     auditory = (user.user_acesses or {}).get('auditory', [])
+
+    # Получаем все устройства, но помечаем, какие из них выбраны у пользователя
+    devices_list = list(Device.objects.all().values('id_device', 'name', 'device_status').distinct())
+
+    # Добавляем флаг is_selected для каждого устройства
+    for device in devices_list:
+        device_id_with_hash = f"#{device['id_device']}"
+        device['is_selected'] = device_id_with_hash in selected_devices
 
     # Преобразуем аудиторные данные в строку для поля ввода
     auditory_input_value = ",".join(auditory)
 
-    if form.is_valid():
-        form.save()
-        return redirect('user_list')
+    if request.method == 'POST':
+        if form.is_valid():
+            # Обработка POST запроса и сохранение данных
+            user_acesses_json = request.POST.get('user_acesses')
+            if user_acesses_json:
+                try:
+                    user_acesses = json.loads(user_acesses_json)
+                    user.user_acesses = user_acesses
+                except json.JSONDecodeError:
+                    pass
 
-    return render(request, 'myapp/product_form.html', {'form': form, 'access_level_choices': access_level_choices, 'selected_devices': devices,'auditory_input_value': auditory_input_value})
+            form.save()
+            return redirect('user_about', user_id=pk)
 
+    return render(request, 'myapp/product_form.html', {
+        'form': form,
+        'access_level_choices': access_level_choices,
+        'devices_list': devices_list,
+        'selected_devices': selected_devices,
+        'auditory_input_value': auditory_input_value
+    })
 
-@login_required
+@login_required(login_url='login')
 def user_about(request, user_id):
-    try:
-        user = СustomUser.objects.get(id_user=user_id)                 #get_object_or_404(User, id_user=user_id)
+    # Проверка, авторизован ли пользователь
+    if not request.user.is_authenticated:
+        return redirect('login')
 
-        cars = Car_access.objects.filter(id_user=user_id).first()   #get_object_or_404(Car_access, id_user=user_id)
+    try:
+        user = СustomUser.objects.get(id_user=user_id)
+        cars = Car_access.objects.filter(id_user=user_id).first()
+
+        # Получаем списки выборов для полей формы
+        access_level_choices = СustomUser._meta.get_field('access_level').choices
+        reg_choices = СustomUser._meta.get_field('reg').choices
+
     except СustomUser.DoesNotExist:
         user = None
         cars = None
+        access_level_choices = []
+        reg_choices = []
 
-    return render(request, 'myapp/product_about.html', {'user': user, 'cars': cars})
+    return render(request, 'myapp/product_about.html', {  # Убедитесь, что путь к шаблону правильный
+        'user': user,
+        'cars': cars,
+        'access_level_choices': access_level_choices,
+        'reg_choices': reg_choices,
+        'is_authenticated': request.user.is_authenticated
+    })
 
+
+@login_required(login_url='login')
+def update_user_field(request, user_id):
+    if request.method == 'POST':
+        field_name = request.POST.get('field_name')
+        field_value = request.POST.get('field_value')
+
+        user = get_object_or_404(СustomUser, id_user=user_id)
+
+        # Обновляем поле в зависимости от его типа
+        if field_name == 'access_level':
+            # Преобразуем строку с разделителями в список
+            user.access_level = field_value.split(',') if field_value else []
+            print(f"Обновляем access_level: {user.access_level}")  # Для отладки
+        elif field_name == 'auditory':
+            # Разбиваем строку с аудиториями на список
+            auditory_list = field_value.split(',') if field_value else []
+
+            # Обновляем user_acesses
+            user_acesses = user.user_acesses or {}
+            user_acesses['auditory'] = auditory_list
+            user.user_acesses = user_acesses
+
+            print(f"Обновляем auditory: {auditory_list}")  # Для отладки
+            print(f"Новый user_acesses: {user.user_acesses}")  # Для отладки
+        elif field_name == 'user_acesses':
+            # Преобразуем строку JSON в словарь
+            user.user_acesses = json.loads(field_value) if field_value else {}
+        else:
+            # Для обычных полей просто устанавливаем значение
+            setattr(user, field_name, field_value)
+
+        user.save()
+
+        # Перенаправляем обратно на страницу пользователя
+        return redirect('user_about', user_id=user_id)
+
+    # Если запрос не POST, перенаправляем на страницу пользователя
+    return redirect('user_about', user_id=user_id)
 
 # Удаление пользователя
 @login_required
@@ -247,21 +337,226 @@ def edit_superuser(request, user_id):
     return JsonResponse({'success': False, 'message': 'Метод не поддерживается'}, status=405)
 
 @login_required
-def log_list_ajax(request):
-    search_query = request.GET.get('search', '')
-    sort_by = request.GET.get('sort', 'datetime')
+def logs_page(request):
+    """Отображение страницы с логами"""
+    return render(request, 'logs_page.html')
 
+@login_required
+def system_logs_api(request):
+    """API для получения системных логов"""
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 12))
+    sort = request.GET.get('sort', 'datetime')
+    direction = request.GET.get('direction', 'desc')
+    search = request.GET.get('search', '')
+    auditory = request.GET.get('filter', '')
+
+    # Получаем логи из базы данных
     logs = Logg.objects.all()
 
-    if search_query:
-        logs = logs.filter(
-            Q(message__icontains=search_query) | Q(level__icontains=search_query)
-        )
+    # Применяем фильтры
+    if search:
+        logs = logs.filter(message__icontains=search)
+    if auditory:
+        logs = logs.filter(auditory_number__icontains=auditory)
 
-    logs = logs.order_by(sort_by)
+    # Применяем сортировку
+    order_by = f"{'-' if direction == 'desc' else ''}{sort}"
+    logs = logs.order_by(order_by)
 
-    return render(request, 'partials/log_list_table.html', {'logs': logs})
+    # Пагинация
+    paginator = Paginator(logs, per_page)
+    logs_page = paginator.get_page(page)
 
+    # Формируем ответ
+    logs_data = []
+    for log in logs_page:
+        logs_data.append({
+            'id': log.id,
+            'datetime': log.datetime,
+            'auditory_number': log.auditory_number,
+            'message': log.message
+        })
+
+    return JsonResponse({
+        'logs': logs_data,
+        'total_count': paginator.count,
+        'total_pages': paginator.num_pages,
+        'current_page': page
+    })
+
+@login_required
+def user_logs_api(request):
+    """API для получения логов пользователей"""
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 12))
+    sort = request.GET.get('sort', 'datetime')
+    direction = request.GET.get('direction', 'desc')
+    search = request.GET.get('search', '')
+    username = request.GET.get('filter', '')
+
+    # Получаем логи из базы данных
+    logs = Logg_access.objects.all()
+
+    # Применяем фильтры
+    if search:
+        logs = logs.filter(message__icontains=search)
+    if username:
+        logs = logs.filter(username__icontains=username)
+
+    # Применяем сортировку
+    order_by = f"{'-' if direction == 'desc' else ''}{sort}"
+    logs = logs.order_by(order_by)
+
+    # Пагинация
+    paginator = Paginator(logs, per_page)
+    logs_page = paginator.get_page(page)
+
+    # Формируем ответ
+    logs_data = []
+    for log in logs_page:
+        # Получаем имя пользователя по uid_card
+        user_name = None
+        if log.uid_card:
+            # Предполагаем, что у вас есть модель User с полем uid_card
+            # Замените User на вашу модель пользователей
+            try:
+                user = СustomUser.objects.filter(uid_card=log.uid_card).first()
+                if user:
+                    # Используйте подходящее поле для имени пользователя
+                    user_name = user.user_name  # или user.get_full_name() или другое поле
+            except Exception as e:
+                print(f"Ошибка при поиске пользователя: {e}")
+
+        logs_data.append({
+            'id': log.id,
+            'datetime': log.datetime,
+            'uid_card': log.uid_card,
+            'action': log.action,
+            'auditory_number': log.auditory_number,
+            'username': user_name  # Добавляем имя пользователя в ответ
+        })
+
+    return JsonResponse({
+        'logs': logs_data,
+        'total_count': paginator.count,
+        'total_pages': paginator.num_pages,
+        'current_page': page
+    })
+
+@login_required
+def device_logs_api(request):
+    """API для получения логов устройств"""
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 12))
+    sort = request.GET.get('sort', 'datetime')
+    direction = request.GET.get('direction', 'desc')
+    search = request.GET.get('search', '')
+    device_id = request.GET.get('filter', '')
+
+    # Получаем логи из базы данных
+    logs = Logg_parking.objects.all()
+
+    # Применяем фильтры
+    if search:
+        logs = logs.filter(message__icontains=search)
+    if device_id:
+        logs = logs.filter(device_id__icontains=device_id)
+
+    # Применяем сортировку
+    order_by = f"{'-' if direction == 'desc' else ''}{sort}"
+    logs = logs.order_by(order_by)
+
+    # Пагинация
+    paginator = Paginator(logs, per_page)
+    logs_page = paginator.get_page(page)
+
+    # Формируем ответ
+    logs_data = []
+    for log in logs_page:
+        logs_data.append({
+            'id': log.id,
+            'datetime': log.datetime,
+            'id_user': log.id_user,
+            'message': log.message
+        })
+
+    return JsonResponse({
+        'logs': logs_data,
+        'total_count': paginator.count,
+        'total_pages': paginator.num_pages,
+        'current_page': page
+    })
+
+@login_required
+def log_detail_api(request):
+    """API для получения деталей лога"""
+    log_id = request.GET.get('id')
+    log_type = request.GET.get('log_type', 'system')
+
+    if not log_id:
+        return JsonResponse({'success': False, 'message': 'ID лога не указан'})
+
+    try:
+        # Выбираем модель в зависимости от типа лога
+        if log_type == 'system':
+            log = Logg.objects.get(id=log_id)
+            log_data = {
+                'id': log.id,
+                'datetime': log.datetime,
+                'auditory_number': log.auditory_number,
+                'message': log.message
+            }
+        elif log_type == 'user':
+            log = Logg_access.objects.get(id=log_id)
+            log_data = {
+                'id': log.id,
+                'datetime': log.datetime,
+                'uid_card': log.uid_card,
+                'action': log.action,
+                'auditory_number': log.auditory_number
+            }
+        elif log_type == 'device':
+            log = Logg_parking.objects.get(id=log_id)
+            log_data = {
+                'id': log.id,
+                'datetime': log.datetime,
+                'id_user': log.id_user,
+                'message': log.message
+            }
+        else:
+            return JsonResponse({'success': False, 'message': 'Неизвестный тип лога'})
+
+        return JsonResponse({'success': True, 'log': log_data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+@require_http_methods(["POST"])
+def delete_log_api(request):
+    """API для удаления лога"""
+    try:
+        data = json.loads(request.body)
+        log_id = data.get('id')
+        log_type = data.get('log_type', 'system')
+
+        if not log_id:
+            return JsonResponse({'success': False, 'message': 'ID лога не указан'})
+
+        # Выбираем модель в зависимости от типа лога
+        if log_type == 'system':
+            log = Logg.objects.get(id=log_id)
+        elif log_type == 'user':
+            log = Logg_access.objects.get(id=log_id)
+        elif log_type == 'device':
+            log = Logg_parking.objects.get(id=log_id)
+        else:
+            return JsonResponse({'success': False, 'message': 'Неизвестный тип лога'})
+
+        log.delete()
+        return JsonResponse({'success': True, 'message': 'Лог успешно удален'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
 
 @login_required
 def save_user(request):
@@ -285,42 +580,89 @@ def save_user(request):
     return render(request, 'myapp/product_form.html', {'form': form})
 
 
-@login_required
+# views.py
+@login_required(login_url='login')
 def edit_access(request, user_id):
     user = get_object_or_404(СustomUser, id_user=user_id)
     car_access = Car_access.objects.filter(id_user=user_id).first()
 
+    # Словарь дней недели
+    days_choices = {
+        'ПН': 'Понедельник',
+        'ВТ': 'Вторник',
+        'СР': 'Среда',
+        'ЧТ': 'Четверг',
+        'ПТ': 'Пятница',
+        'СБ': 'Суббота',
+        'ВС': 'Воскресенье'
+    }
+
     # Если данные уже сохранены, разбиваем их на отдельные части (дни и время)
-    if car_access:
-        selected_days = car_access.time_access.split(';')[0].split(',')
-        start_time, end_time = car_access.time_access.split(';')[1].split(',')
+    if car_access and car_access.time_access:
+        parts = car_access.time_access.split(';')
+        if len(parts) >= 2:
+            selected_days = parts[0].split(',')
+            time_parts = parts[1].split(',')
+            start_time = time_parts[0] if len(time_parts) > 0 else ''
+            end_time = time_parts[1] if len(time_parts) > 1 else ''
+        else:
+            selected_days = []
+            start_time = ''
+            end_time = ''
     else:
         selected_days = []
-        start_time = ''
-        end_time = ''
+        start_time = '09:00'  # Значения по умолчанию
+        end_time = '18:00'
 
     if request.method == "POST":
+        # Получаем данные о времени доступа
         selected_days = request.POST.getlist("days")
         start_time = request.POST.get("start_time")
         end_time = request.POST.get("end_time")
 
-        if selected_days and start_time and end_time:
+        # Получаем данные об автомобиле
+        car_plate_number = request.POST.get("car_plate_number")
+        brand_model = request.POST.get("brand_model")
+        color = request.POST.get("color")
+
+        # Проверяем, что все необходимые данные заполнены
+        if selected_days and start_time and end_time and car_plate_number and brand_model and color:
             formatted_access = f"{','.join(selected_days)};{start_time},{end_time}"
+
             if car_access:
+                # Обновляем существующую запись
                 car_access.time_access = formatted_access
+                car_access.car_plate_number = car_plate_number
+                car_access.brand_model = brand_model
+                car_access.color = color
                 car_access.save()
             else:
-                Car_access.objects.create(user=user, time_access=formatted_access)
+                # Создаем новую запись
+                Car_access.objects.create(
+                    id_user=user_id,  # Используем id_user вместо user
+                    time_access=formatted_access,
+                    car_plate_number=car_plate_number,
+                    brand_model=brand_model,
+                    color=color
+                )
 
+            # Добавляем сообщение об успешном сохранении
+            messages.success(request, "Информация об автомобиле и доступе успешно сохранена")
             return redirect('user_about', user_id=user_id)
+        else:
+            messages.error(request, "Пожалуйста, заполните все обязательные поля")
 
-    return render(request, "myapp/edit_access.html", {
+    # Подготавливаем контекст для шаблона
+    context = {
         "user": user,
         "car_access": car_access,
         "selected_days": selected_days,
         "start_time": start_time,
-        "end_time": end_time
-    })
+        "end_time": end_time,
+        "days_choices": days_choices
+    }
+
+    return render(request, "myapp/edit_access.html", context)
 
 
 """@login_required
@@ -361,6 +703,7 @@ def device_list(request):
     })
 
 # Добавление нового пользователя
+@login_required
 def device_add(request):
     if request.method == 'POST':
         post_data = request.POST.copy()
@@ -388,21 +731,25 @@ def device_add(request):
             post_data['calendar_exception'] = 'null'
 
         # Обработка активности
-        post_data['device_activated'] = 'device_activated' in post_data
+        if 'device_activated' in post_data:
+            post_data['device_status'] = 'normal'
+        else:
+            post_data['device_status'] = 'timed out'
 
-        # 💡 Добавим шаблон device_api, если поле пустое
+        # Обработка device_api
         device_api_input = post_data.get('device_api', '').strip()
         if not device_api_input:
-            default_api = {
-                "open": [""],
-                "checkabe": "",
-                "commands": [""]
-            }
-            post_data['device_api'] = json.dumps(default_api)
+            # Шаблон JSON с правильным форматированием
+            default_api = {}
+            post_data['device_api'] = json.dumps(default_api, indent=2)
         else:
             try:
-                # Проверка, валиден ли JSON
-                json.loads(device_api_input)
+                # Проверка и форматирование JSON
+                if isinstance(device_api_input, dict):
+                    post_data['device_api'] = json.dumps(device_api_input, indent=2)
+                else:
+                    parsed_json = json.loads(device_api_input)
+                    post_data['device_api'] = json.dumps(parsed_json, indent=2)
             except json.JSONDecodeError:
                 form = DeviceForm(post_data)
                 form.add_error('device_api', "Невалидный JSON в API")
@@ -410,17 +757,35 @@ def device_add(request):
 
         form = DeviceForm(post_data)
         if form.is_valid():
-            form.save()
-            return redirect('device_list')
+            try:
+                # Сохраняем форму, метод save в форме установит правильный id_device
+                device = form.save()
+                return redirect('device_list')
+            except Exception as e:
+                # Добавляем логирование ошибки
+                print(f"Ошибка при сохранении устройства: {e}")
+                form.add_error(None, f"Ошибка при сохранении: {e}")
         else:
             print("Ошибки формы:", form.errors)
-
     else:
         form = DeviceForm()
+        # Предустановка шаблона JSON для нового устройства
+        default_api = {
+            "open": [
+                "rel_0",
+                "1",
+                "0"
+            ],
+            "checkabe": "True",
+            "commands": ["status"]
+        }
+        form.initial['device_api'] = json.dumps(default_api, indent=2)
 
     return render(request, 'devices/device_form.html', {'form': form})
 
 
+
+@login_required
 def device_edit(request, pk):
     device = get_object_or_404(Device, pk=pk)
 
@@ -437,30 +802,25 @@ def device_edit(request, pk):
                 "close_day": [day.strip() for day in (post_data.get('close_day') or '').split(',') if day.strip()],
                 "close_time": post_data.get('close_time', '')
             }
+            # Для JSONField мы можем передать словарь напрямую
             post_data['calendar_regular'] = json.dumps(calendar_regular)
 
-            # Собираем calendar_exception в JSON
+            # calendar_exception
             calendar_exception = {
                 "open_day": [day.strip() for day in (post_data.get('exception_open_day') or '').split(',') if day.strip()],
                 "close_day": [day.strip() for day in (post_data.get('exception_close_day') or '').split(',') if day.strip()],
             }
+            # Для JSONField мы можем передать словарь напрямую
             post_data['calendar_exception'] = json.dumps(calendar_exception)
         else:
             post_data['calendar_regular'] = 'null'
             post_data['calendar_exception'] = 'null'
 
         # Обработка флага активности
-        post_data['device_activated'] = 'device_activated' in post_data
-
-        # Проверка валидности JSON для device_api
-        device_api_input = post_data.get('device_api', '').strip()
-        if device_api_input:
-            try:
-                json.loads(device_api_input)
-            except json.JSONDecodeError:
-                form = DeviceForm(post_data, instance=device)
-                form.add_error('device_api', "Невалидный JSON в API")
-                return render(request, 'devices/device_form.html', {'form': form, 'device': device})
+        if 'device_activated' in post_data:
+            post_data['device_status'] = 'normal'
+        else:
+            post_data['device_status'] = 'timed out'
 
         form = DeviceForm(post_data, instance=device)
         if form.is_valid():
@@ -472,12 +832,15 @@ def device_edit(request, pk):
     else:
         # Предзаполнение полей из JSON при GET-запросе
         try:
-            calendar_regular = json.loads(device.calendar_regular) if device.calendar_regular and device.calendar_regular != 'null' else {}
-            calendar_exception = json.loads(device.calendar_exception) if device.calendar_exception and device.calendar_exception != 'null' else {}
-        except json.JSONDecodeError:
+            # Для JSONField данные уже являются Python объектами
+            calendar_regular = device.calendar_regular or {}
+            calendar_exception = device.calendar_exception or {}
+        except Exception as e:
+            print(f"Ошибка при получении данных календаря: {e}")
             calendar_regular = {}
             calendar_exception = {}
 
+        # Заполняем поля формы
         device.open_day = ', '.join(calendar_regular.get('open_day', []))
         device.open_time = calendar_regular.get('open_time', '')
         device.close_day = ', '.join(calendar_regular.get('close_day', []))
@@ -522,10 +885,15 @@ def get_dashboard_data(request):
         "occupations": last_user.occupations if last_user else "",
         "id_user": last_user.id_user if last_user else None,
     }
-    last_device = Device.objects.order_by("-id_device").first()
-    last_device_data = {
-        "device_name": last_device.name if last_device else "Нет Devices",
-        "activated": last_device.device_activated if last_device else "",
-        "id_device": last_device.id_device if last_device else None,
-    }
-    return JsonResponse({"logs": logs_data, "last_user": last_user_data, "last_device": last_device_data})
+    devices_data = []
+    devices = Device.objects.all()
+    for device in devices:
+        devices_data.append({
+            'id_device': device.id_device,
+            'device_name': device.name,  # Используем поле name вместо device_name
+            'device_status': device.device_status or 'normal',  # Устанавливаем 'normal' если None
+            'mac': device.mac,
+            'ip': device.ip,
+            'device_activated': device.device_activated
+        })
+    return JsonResponse({"logs": logs_data, "last_user": last_user_data, 'devices': devices_data})

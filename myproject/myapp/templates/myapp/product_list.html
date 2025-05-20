@@ -1,241 +1,955 @@
 {% extends 'myapp/base.html' %}
+{% load static %}
 
 {% block content %}
-
-{% load custom_filters %}
-
 <style>
-    #notification {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        z-index: 1050;
-        max-width: 264px; /* Ограничиваем ширину уведомления */
+    :root {
+        /* Основная цветовая схема - приближаем к вашему интерфейсу */
+        --primary: #1e88e5; /* Синий цвет для кнопок */
+        --primary-hover: #1976d2;
+        --primary-light: rgba(30, 136, 229, 0.1);
+        --secondary: #546e7a;
+        --success: #43a047;
+        --warning: #f57c00;
+        --danger: #e53935; /* Красный для кнопок удаления */
+        --info: #29b6f6;
+
+        /* Фоны и поверхности - делаем темнее */
+        --surface-0: #2c3034; /* Основной фон */
+        --surface-1: #2c3034; /* Фон карточек */
+        --surface-2: #383f42; /* Фон элементов внутри карточек */
+        --surface-3: #323236;
+        --surface-4: #3d3d42;
+
+        /* Текст - светлее для лучшей читаемости */
+        --text-primary: #f5f5f5;
+        --text-secondary: #b0b0b0;
+        --text-tertiary: #808080;
+
+        /* Границы - темнее */
+        --border: #3d3d42;
+        --border-light: #2a2a2e;
+
+        --radius: 0.5rem;
+        --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+        /* Радиусы */
+        --radius-sm: 0.375rem;
+        --radius: 0.5rem;
+        --radius-md: 0.75rem;
+        --radius-lg: 1rem;
+        --redius-full: 9999px;
     }
 
-    .alert-dismissible {
-        padding-right: 3rem;
+
+    /* Основные стили контейнера */
+    .content-container {
+        padding: 1rem;
+        width: 100%;
+        max-width: 100%;
+        transition: all 0.3s ease;
+        position: relative;
     }
 
-    .alert-dismissible .btn-close {
+    /* Заголовок страницы */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        color: var(--text-primary);
+    }
+
+    /* Карточки */
+    .card {
+        background: var(--surface-1);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-light);
+        overflow: hidden;
+        transition: all 0.2s ease;
+        box-shadow: var(--shadow);
+        margin-bottom: 1rem;
+    }
+
+    /* Поиск */
+    .search-card {
+        margin-bottom: 1.5rem;
+        padding: 1.25rem;
+    }
+
+
+
+    .search-form {
+        display: flex;
+        gap: 0.75rem;
+        position: relative;
+        height: 3rem;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        flex-grow: 1;
+    }
+
+    .search-input-wrapper i {
         position: absolute;
-        top: 10px;s
-        right: 10px;
+        left: 1rem;
+        top: 75%;
+        transform: translateY(-50%);
+        color: var(--text-tertiary);
+        pointer-events: none;
+        transition: all 0.2s ease;
     }
-    .input-group-text {
-        background-color: #1b1c1c;
-        cursor: pointer;
+
+    .search-input {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        border-radius: var(--radius);
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        width: 100%;
+        transition: all 0.2s ease;
+        font-size: 0.95rem;
     }
-    .input-group-text:hover {
-        background-color: #515152;
+
+    .search-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    .search-input:focus + i {
+        color: var(--primary);
+    }
+
+    .search-button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        height: 48px;
+    }
+
+    .search-button:hover {
+        background: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+    }
+
+    /* Список пользователей */
+    .users-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .user-item {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-light);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+    }
+
+    .user-item:last-child {
+        border-bottom: none;
+    }
+
+    .user-item:hover {
+        background: var(--surface-2);
+    }
+
+    /* Информация о пользователе */
+    .user-info {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0; /* Важно для предотвращения переполнения */
+    }
+
+    .user-name {
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+        font-size: 1rem;
+    }
+
+    .user-email {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.25rem;
+    }
+
+    /* Колонки с фиксированной шириной */
+    .user-columns {
+        display: flex;
+        width: 100%;
+        align-items: center;
+    }
+
+    .user-column {
+        padding: 0 1rem;
+    }
+
+    .column-name {
+        flex: 2;
+        min-width: 250px;
+    }
+
+    .column-department {
+        flex: 1;
+        min-width: 150px;
+        max-width: 200px;
+    }
+
+    .column-role {
+        flex: 1;
+        min-width: 150px;
+        text-align: center;
+    }
+
+    .column-actions {
+        flex: 0 0 120px;
+        text-align: right;
+    }
+
+    .user-department {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Бейджи */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+    }
+
+    .badge-admin {
+        background: rgba(79, 70, 229, 0.1);
+        color: #818cf8;
+    }
+
+    .badge-user {
+        background: rgba(16, 185, 129, 0.1);
+        color: #34d399;
+    }
+
+    .badge-alien {
+        background: rgba(139, 92, 246, 0.1);
+        color: #a78bfa;
+    }
+
+    /* Кнопки действий */
+    .actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+
+    .btn-action {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        transition: all 0.2s ease;
+        background: transparent;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn-info {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--info);
+    }
+
+    .btn-info:hover {
+        background: rgba(59, 130, 246, 0.2);
+    }
+
+    .btn-edit {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+    }
+
+    .btn-edit:hover {
+        background: rgba(245, 158, 11, 0.2);
+    }
+
+    .btn-delete {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+    }
+
+    .btn-delete:hover {
+        background: rgba(239, 68, 68, 0.2);
+    }
+
+    /* Пустое состояние */
+    .empty-state {
+        padding: 4rem 2rem;
+        text-align: center;
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        color: var(--text-tertiary);
+        margin-bottom: 1.5rem;
+        opacity: 0.7;
+    }
+
+    .empty-state-text {
+        color: var(--text-secondary);
+        font-size: 1.125rem;
+        font-weight: 500;
+    }
+
+    /* Пагинация */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 0.25rem;
+        background: var(--surface-1);
+        padding: 0.5rem;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+    }
+
+    .page-item .page-link {
+        min-width: 2.5rem;
+        height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius);
+        color: var(--text-secondary);
+        transition: all 0.2s ease;
+        font-weight: 500;
+        background: transparent;
+        border: none;
+    }
+
+    .page-item .page-link:hover {
+        background: var(--surface-2);
+        color: var(--text-primary);
+    }
+
+    .page-item.active .page-link {
+        background: var(--primary);
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        color: var(--text-tertiary);
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .page-info {
+        padding: 0 1rem;
+        display: flex;
+        align-items: center;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    /* Кнопки */
+    .btn {
+        padding: 0.75rem 1.25rem;
+        border-radius: var(--radius);
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+    }
+
+    /* Модальное окно подтверждения */
+    .confirm-overlay {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        transition: all 0.3s ease;
+    }
+
+    .confirm-wrapper {
+        max-width: 28rem;
+        width: 100%;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    .confirm-dialog {
+        background: var(--surface-1);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+        animation: confirmFadeIn 0.3s ease forwards;
+    }
+
+    .confirm-header {
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .confirm-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: var(--radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .confirm-icon.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+    }
+
+    .confirm-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        flex-grow: 1;
+    }
+
+    .confirm-close {
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--text-tertiary);
+        transition: all 0.2s ease;
+    }
+
+    .confirm-close:hover {
+        background: var(--surface-2);
+        color: var(--text-primary);
+    }
+
+    .confirm-body {
+        padding: 1.5rem;
+        color: var(--text-secondary);
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .confirm-user-info {
+        margin-top: 1.5rem;
+        background: var(--surface-2);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .confirm-user-name {
+        font-weight: 600;
+        font-size: 1.125rem;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .confirm-user-email {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .confirm-footer {
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .btn-secondary {
+        background: var(--surface-3);
+        color: var(--text-primary);
+        border: none;
+    }
+
+    .btn-secondary:hover {
+        background: var(--surface-4);
+    }
+
+    .btn-danger {
+        background: var(--danger);
+        color: white;
+        border: none;
+    }
+
+    .btn-danger:hover {
+        background: #dc2626;
+    }
+
+    @keyframes confirmFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes confirmFadeOut {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+    }
+
+    /* Адаптивное поведение при сворачивании меню */
+    @media (min-width: 992px) {
+        .content-container {
+            margin-left: 80px;
+            width: calc(100% - 80px);
+            padding-left: 0.25rem;
+        }
+
+        .sidebar-collapsed ~ .content .content-container {
+            margin-left: 124px;
+            width: calc(100% - 124px);
+        }
+    }
+
+    /* Адаптивность для мобильных устройств */
+    @media (max-width: 991.98px) {
+        .content-container {
+            margin-left: 0;
+            width: 100%;
+            padding: 1rem;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .search-form {
+            flex-direction: column;
+        }
+
+        .user-columns {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .column-name,
+        .column-department,
+        .column-role {
+            width: 100%;
+            max-width: none;
+            padding: 0.25rem 0;
+        }
+
+        .column-actions {
+            width: 100%;
+            padding: 0.5rem 0 0 0;
+        }
+
+        .actions {
+            justify-content: flex-start;
+        }
     }
 </style>
 
-<div class="container">
-    <div id="notification" class="alert d-none" role="alert"></div>
-    <h1 class="mb-4">Пользователи</h1>
-    <!-- Таблица пользователей -->
-    <form method="get" class="mb-4">
-        <div class="input-group">
-            <input  type="text" name="q" class="form-control" placeholder="Поиск..." value="{{ request.GET.q }}">
-            <button type="submit" class="btn btn-primary">Поиск</button>
-            <a class = "btn btn-secondary"  href="{% url 'user_create' %}">Создать пользователя</a>
-        </div>
-    </form>
-
-    <table class="table table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>ФИО</th>
-                <th style="width: 140px;">Депаратамент</th>
-                <th>Телефон</th>
-                <th>Почта</th>
-                <th>Уровень доступа</th>
-                <th>Дейстие</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-                <tr>
-                    <td>{{ user.user_name }}</td>
-                    <td style="width: 140px;">{{ user.departments }}</td>
-                    <td>{{ user.phone_number }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.access_level }}</td>
-                    <td>
-                        <div class="d-flex">
-                            <a class = "btn btn-primary me-2 mb-2"  href="{% url 'user_about' user.pk %}">Подробнее</a>
-                            <a class = "btn btn-primary mb-2 me-2"  href="{% url 'user_update' user.pk %}">Редактировать</a>
-                            <button class="btn btn-danger mb-2 me-2" data-bs-toggle="modal"
-                                    data-bs-target="#deleteModal"
-                                    data-user-id="{{ user.id_user }}"
-                                    data-user-name="{{ user.user_name }}">
-                                Удалить
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="6">Ничего не найдено.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <!-- Модальное окно -->
-    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="userModalLabel">Добавление / Редактирование пользователя</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Здесь будет загружаться форма через AJAX -->
-                    <div id="userFormContainer">
-                        <p>Загрузка...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="content-container">
+    <!-- Заголовок страницы -->
+    <div class="page-header">
+        <h1 class="page-title">Список пользователей</h1>
+        <a href="{% url 'user_create' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i>
+            Создать пользователя
+        </a>
     </div>
 
-</div>
-<nav aria-label="Page navigation">
-    <ul class="pagination justify-content-center">
-        {% if users.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?q={{ query }}&page=1" aria-label="First">
-                    <span aria-hidden="true">&laquo;&laquo;</span>
-                </a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?q={{ query }}&page={{ users.previous_page_number }}" aria-label="Previous">
-                    <span aria-hidden="true">&laquo;</span>
-                </a>
-            </li>
-        {% endif %}
-        <li class="page-item disabled">
-            <span class="page-link">Page {{ users.number }} of {{ users.paginator.num_pages }}</span>
-        </li>
-        {% if users.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?q={{ query }}&page={{ users.next_page_number }}" aria-label="Next">
-                    <span aria-hidden="true">&raquo;</span>
-                </a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?q={{ query }}&page={{ users.paginator.num_pages }}" aria-label="Last">
-                    <span aria-hidden="true">&raquo;&raquo;</span>
-                </a>
-            </li>
-        {% endif %}
-    </ul>
-</nav>
+    <!-- Поиск -->
+    <div class="card search-card">
+        <form method="get" class="search-form">
+            <div class="search-input-wrapper">
+                <input type="text" name="q" class="search-input"
+                       placeholder="Поиск пользователей..."
+                       value="{{ request.GET.q }}">
+                <i class="bi bi-search"></i>
+            </div>
+            <button type="submit" class="search-button">
+                <i class="bi bi-search"></i>
+                Найти
+            </button>
+        </form>
+    </div>
 
-<!-- Модальное окно -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Подтвердить удаление</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- Список пользователей -->
+    <div class="card">
+        <ul class="users-list">
+            {% for user in users %}
+            <li class="user-item">
+                <div class="user-columns">
+                    <div class="user-column column-name">
+                        <div class="user-info">
+                            <div class="user-name">{{ user.user_name }}</div>
+                            <div class="user-email">{{ user.email }}</div>
+                        </div>
+                    </div>
+
+                    <div class="user-column column-department">
+                        <div class="user-department">{{ user.departments|default:"&mdash;" }}</div>
+                    </div>
+
+                    <div class="user-column column-role">
+                        {% if user.access_level == 'admin' %}
+                        <span class="badge badge-admin">
+                            <i class="bi bi-shield-lock"></i>
+                            Администратор
+                        </span>
+                        {% elif user.access_level == 'user' %}
+                        <span class="badge badge-user">
+                            <i class="bi bi-person"></i>
+                            Пользователь
+                        </span>
+                        {% elif user.access_level == 'alien' %}
+                        <span class="badge badge-alien">
+                            <i class="bi bi-person-badge"></i>
+                            Внешний
+                        </span>
+                        {% else %}
+                        <span class="badge badge-user">
+                            <i class="bi bi-person"></i>
+                            {{ user.access_level }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="user-column column-actions">
+                        <div class="actions">
+                            <a href="{% url 'user_about' user.pk %}" class="btn-action btn-info" title="Подробнее">
+                                <i class="bi bi-info-circle"></i>
+                            </a>
+                            <a href="{% url 'user_update' user.pk %}" class="btn-action btn-edit" title="Редактировать">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button class="btn-action btn-delete delete-btn"
+                                    data-user-id="{{ user.id_user }}"
+                                    data-user-name="{{ user.user_name }}"
+                                    data-user-email="{{ user.email }}"
+                                    data-user-department="{{ user.departments|default:'' }}"
+                                    data-user-access="{{ user.access_level }}"
+                                    title="Удалить">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            {% empty %}
+            <li class="user-item">
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-search"></i>
+                    </div>
+                    <div class="empty-state-text">Пользователи не найдены</div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Пагинация -->
+    {% if users.paginator.num_pages > 1 %}
+    <div class="pagination-container">
+        <div class="pagination">
+            {% if users.has_previous %}
+            <div class="page-item">
+                <a class="page-link" href="?q={{ query }}&page=1" title="Первая страница">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
             </div>
-            <div class="modal-body">
-                Вы действительно хотите удалить пользователя. <strong id="modalUserName"></strong> ?
+            <div class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ users.previous_page_number }}" title="Предыдущая страница">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отменить</button>
-                <form id="deleteForm" method="post">
+            {% endif %}
+
+            <div class="page-info">
+                Страница {{ users.number }} из {{ users.paginator.num_pages }}
+            </div>
+
+            {% if users.has_next %}
+            <div class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ users.next_page_number }}" title="Следующая страница">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+            <div class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ users.paginator.num_pages }}" title="Последняя страница">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div id="deleteConfirmOverlay" class="confirm-overlay">
+    <div class="confirm-wrapper">
+        <div class="confirm-dialog">
+            <div class="confirm-header">
+                <div class="confirm-icon warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <div class="confirm-title">Подтверждение удаления</div>
+                <button class="confirm-close" id="closeConfirmDialog">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            <div class="confirm-body">
+                <p>Вы действительно хотите удалить этого пользователя? Это действие нельзя отменить.</p>
+                <div class="confirm-user-info">
+                    <div class="confirm-user-name" id="confirmUserName"></div>
+                    <div class="confirm-user-email" id="confirmUserEmail"></div>
+                </div>
+            </div>
+            <div class="confirm-footer">
+                <button class="btn btn-secondary" id="cancelDeleteBtn">
+                    Отмена
+                </button>
+                <form id="confirmDeleteForm" method="post">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Удалить</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i>
+                        Удалить
+                    </button>
                 </form>
             </div>
         </div>
     </div>
 </div>
 
-
-<!-- Боковое меню
-<div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu">
-  <div class="offcanvas-header bg-dark text-white border-bottom border-secondary">
-    <h5 class="offcanvas-title">Меню</h5>
-    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-  </div>
-  <div class="offcanvas-body bg-dark p-0 d-flex flex-column">
-    <ul class="nav nav-pills flex-column mb-auto p-3">
-      <!-- Кнопка "Добавить нового пользователя"
-      <li class="nav-item mb-2">
-        <a class="btn btn-outline-light w-100 text-start d-flex align-items-center" href="{% url 'user_create' %}">
-          <i class="bi bi-person-plus me-2"></i>
-          Добавить нового пользователя
-        </a>
-      </li>
-
-      <!-- Кнопка "Добавить суперпользователя"
-      <li class="nav-item mb-2">
-        <button type="button" class="btn btn-outline-light w-100 text-start d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createSuperUserModal">
-          <i class="bi bi-person-fill-gear me-2"></i>
-          Добавить суперпользователя
-        </button>
-      </li>
-
-      <!-- Кнопка "Показать суперпользователей"
-      <li class="nav-item mb-2">
-        <button type="button" class="btn btn-outline-light w-100 text-start d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#superUserModal" onclick="loadSuperUsers()">
-          <i class="bi bi-people-fill me-2"></i>
-          Показать суперпользователей
-        </button>
-      </li>
-
-        <!-- Кнопка "Показать Показать логги"
-      <li class="nav-item mb-2">
-          <!-- Кнопка для открытия модального окна
-            <button type="button" class="btn btn-outline-light w-100 text-start d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#logsModal">
-                <i class="bi bi-braces-asterisk me-2"></i>
-                Просмотр логов
-            </button>
-      </li>
-
-      <!-- Кнопка "Выйти"
-      <li class="nav-item mb-2">
-        {% if user.is_authenticated %}
-          <form method="post" action="{% url 'logout' %}" class="w-100">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-outline-danger w-100 text-start d-flex align-items-center">
-              <i class="bi bi-box-arrow-right me-2"></i>
-              Выйти
-            </button>
-          </form>
-        {% endif %}
-      </li>
-    </ul>
-
-    <!-- Дополнительный контент (если нужен)
-    <div class="p-3 border-top border-secondary mt-auto">
-      <small class="text-white-50">Ваш текст или логотип</small>
-    </div>
-  </div>
-</div>-->
-
-
-
 <script>
-    const deleteModal = document.getElementById('deleteModal');
-    deleteModal.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;  // Кнопка, вызвавшая модальное окно
-        const userId = button.getAttribute('data-user-id');
-        const userName = button.getAttribute('data-user-name');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Функциональность модального окна подтверждения удаления
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        const confirmOverlay = document.getElementById('deleteConfirmOverlay');
+        const confirmDialog = confirmOverlay.querySelector('.confirm-dialog');
+        const confirmForm = document.getElementById('confirmDeleteForm');
 
-        // Обновляем содержимое модального окна
-        const modalUserName = document.getElementById('modalUserName');
-        modalUserName.textContent = userName;
+        // Функция для отображения модального окна подтверждения удаления
+        function showDeleteConfirmation(userId, userName, userEmail) {
+            // Устанавливаем информацию о пользователе
+            document.getElementById('confirmUserName').textContent = userName;
+            document.getElementById('confirmUserEmail').textContent = userEmail;
 
-        // Устанавливаем URL действия формы
-        const deleteForm = document.getElementById('deleteForm');
-        deleteForm.action = `/users/delete/${userId}/`;
+            // Устанавливаем действие формы
+            confirmForm.action = `/users/delete/${userId}/`;
+
+            // Показываем оверлей с анимацией
+            confirmOverlay.style.display = 'flex';
+            confirmDialog.style.animation = 'confirmFadeIn 0.3s ease forwards';
+        }
+
+        // Функция для закрытия модального окна подтверждения
+        function closeConfirmDialog() {
+            confirmDialog.style.animation = 'confirmFadeOut 0.3s ease forwards';
+
+            setTimeout(() => {
+                confirmOverlay.style.display = 'none';
+                confirmDialog.style.animation = '';
+            }, 300);
+        }
+
+        // Добавляем обработчики событий для кнопок удаления
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const userId = this.getAttribute('data-user-id');
+                const userName = this.getAttribute('data-user-name');
+                const userEmail = this.getAttribute('data-user-email');
+
+                showDeleteConfirmation(userId, userName, userEmail);
+            });
+        });
+
+        // Добавляем обработчики событий для закрытия модального окна
+        document.getElementById('closeConfirmDialog').addEventListener('click', closeConfirmDialog);
+        document.getElementById('cancelDeleteBtn').addEventListener('click', closeConfirmDialog);
+
+        // Закрытие по клавише ESC
+        document.addEventListener('keydown', (e) => {
+            if (confirmOverlay.style.display === 'flex' && e.key === 'Escape') {
+                closeConfirmDialog();
+            }
+        });
+
+        // Закрытие при клике вне модального окна
+        confirmOverlay.addEventListener('click', (e) => {
+            if (e.target === confirmOverlay) {
+                closeConfirmDialog();
+            }
+        });
+
+        // Добавляем обработчик для формы подтверждения удаления
+        confirmForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const userId = this.action.split('/').filter(Boolean).pop();
+            const userName = document.getElementById('confirmUserName').textContent;
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': this.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams(new FormData(this))
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json().catch(() => ({}));
+                    }
+                    throw new Error('Ошибка при удалении пользователя');
+                })
+                .then(response_data => {
+                    closeConfirmDialog();
+
+                    // Показываем уведомление об успешном удалении
+                    if (typeof AppNotifications !== 'undefined') {
+                        AppNotifications.success(`Пользователь ${userName} успешно удален`, 'Успешно');
+                    }
+
+                    // Удаляем элемент из списка или перезагружаем страницу
+                    const userItem = document.querySelector(`[data-user-id="${userId}"]`).closest('.user-item');
+                    if (userItem) {
+                        userItem.style.opacity = '0';
+                        userItem.style.transform = 'translateY(-10px)';
+                        userItem.style.transition = 'all 0.3s ease';
+
+                        setTimeout(() => {
+                            userItem.remove();
+
+                            // Проверяем, остались ли пользователи в списке
+                            const remainingItems = document.querySelectorAll('.users-list .user-item').length;
+                            if (remainingItems === 0) {
+                                // Если пользователей не осталось, показываем пустое состояние
+                                const emptyItem = document.createElement('li');
+                                emptyItem.className = 'user-item';
+                                emptyItem.innerHTML = `
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">
+                                        <i class="bi bi-search"></i>
+                                    </div>
+                                    <div class="empty-state-text">Пользователи не найдены</div>
+                                </div>
+                            `;
+                                document.querySelector('.users-list').appendChild(emptyItem);
+                            }
+                        }, 300);
+                    } else {
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    closeConfirmDialog();
+
+                    // Показываем уведомление об ошибке
+                    if (typeof AppNotifications !== 'undefined') {
+                        AppNotifications.error(error.message, 'Ошибка');
+                    }
+                });
+        });
+
+        // Проверяем состояние бокового меню для адаптивности
+        function checkSidebarState() {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                const isCollapsed = !sidebar.classList.contains('active');
+                document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+            }
+        }
+
+        // Проверяем при загрузке и при изменении состояния меню
+        checkSidebarState();
+        window.addEventListener('resize', checkSidebarState);
+
+        // Если есть событие изменения состояния меню, подписываемся на него
+        if (typeof window.sidebarStateChanged === 'function') {
+            window.sidebarStateChanged = (isActive) => {
+                document.body.classList.toggle('sidebar-collapsed', !isActive);
+            };
+        }
     });
 </script>
-
 
 {% endblock %}

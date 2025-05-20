@@ -1,70 +1,1171 @@
 {% extends 'myapp/base.html' %}
 
 {% block content %}
+<div class="container-fluid mt-5 mb-5">
+    <!-- Скрытая форма для отправки данных -->
+    <form id="userForm" method="post" action="{% url 'update_user_field' user.id_user %}" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" id="field_name" name="field_name" value="">
+        <input type="hidden" id="field_value" name="field_value" value="">
+    </form>
 
-<div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-lg border-0 rounded-4">
-                <div class="card-header bg-primary text-white text-center py-3">
-                    <h4 class="mb-0">Информация о пользователе</h4>
-                </div>
-                <div class="card-body p-4">
+        <div class="col-md-11 col-lg-10">
+            <div class="user-card">
+                <div class="card-header text-white text-center">
                     {% if user %}
-                    <div class="mb-3">
-                        <p class="fw-semibold mb-1">ФИО:</p>
-                        <p class="text-muted">{{ user.user_name }}</p>
+                    <div class="user-avatar">
+                        {{ user.user_name|slice:":1"|upper }}
+                    </div>
+                    <h4 class="header-title">Информация о пользователе</h4>
+                    {% else %}
+                    <h4 class="header-title">Пользователь не найден</h4>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+                    {% if user %}
+                    <!-- ID пользователя и статус регистрации -->
+                    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap">
+                        <div class="card-id mb-2 mb-md-0">
+                            <i class="bi bi-person-badge"></i>
+                            ID: {{ user.id_user }}
+                        </div>
+
+                        <div class="status-container">
+                            <div class="status-label mb-2">Статус регистрации:</div>
+                            <div class="d-flex align-items-center">
+                                <div id="reg_display">
+                                    {% if user.reg == 0 %}
+                                    <div class="status-badge status-pending">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        Не завершил регистрацию
+                                    </div>
+                                    {% elif user.reg == 1 %}
+                                    <div class="status-badge status-registered">
+                                        <i class="bi bi-check-circle"></i>
+                                        Зарегистрирован
+                                    </div>
+                                    {% elif user.reg == 2 %}
+                                    <div class="status-badge status-waiting">
+                                        <i class="bi bi-hourglass-split"></i>
+                                        Ожидает активации через Telegram
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="edit-btn ms-2" onclick="editField('reg', '{{ user.reg }}')">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </div>
+
+                            <div id="reg_edit" class="edit-field mt-3">
+                                <div class="btn-group" role="group" aria-label="Registration Status">
+                                    {% for choice in reg_choices %}
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            id="regStatus{{ forloop.counter }}"
+                                            name="reg"
+                                            value="{{ choice.0 }}"
+                                            {% if user.reg == choice.0 %}checked{% endif %}
+                                            autocomplete="off"
+                                    >
+                                    <label class="btn btn-outline-primary" for="regStatus{{ forloop.counter }}">
+                                        {{ choice.1 }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-success btn-sm" onclick="saveField('reg')">
+                                        <i class="bi bi-check"></i> Сохранить
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="cancelEdit('reg')">
+                                        <i class="bi bi-x"></i> Отмена
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {% if cars %}
-                    <div class="mb-3">
-                        <p class="fw-semibold mb-1">ID:</p>
-                        <p class="text-muted">{{ cars.id_user }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <p class="fw-semibold mb-1">Номер машины:</p>
-                        <p class="text-muted">{{ cars.car_plate_number }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <p class="fw-semibold mb-1">Марка:</p>
-                        <p class="text-muted">{{ cars.brand_model }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <p class="fw-semibold mb-1">Цвет:</p>
-                        <p class="text-muted">{{ cars.color }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <p class="fw-semibold mb-1">Время доступа:</p>
-                        <p class="text-muted">{{ cars.time_access }}</p>
-                    </div>
-                    {% else %}
-                    <div class="alert alert-warning text-center">
-                        <p class="mb-0"><strong>Информации нет.</strong></p>
-                    </div>
-                    <div class="text-center">
-                        <a class="btn btn-success btn-sm" href="{% url 'edit_access' user.pk %}">
-                            Добавить информацию
-                        </a>
-                    </div>
-                    {% endif %}
-                    {% else %}
-                    <div class="alert alert-danger text-center">
-                        <p class="mb-0">Пользователь не найден.</p>
-                    </div>
-                    {% endif %}
+                    <!-- Основная информация -->
+                    <div class="info-section">
+                        <h5 class="section-title">
+                            <i class="bi bi-person-vcard"></i>
+                            Основная информация
+                        </h5>
 
-                    <div class="d-flex justify-content-between mt-4">
-                        <a class="btn btn-outline-primary w-100 me-2" href="{% url 'edit_access' user.pk %}">
-                            Настроить доступ к парковке
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-person"></i>
+                                    ФИО
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div id="user_name_display" class="info-value">{{ user.user_name }}</div>
+                                    <button type="button" class="edit-btn" onclick="editField('user_name', '{{ user.user_name|escapejs }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="user_name_edit" class="edit-field">
+                                    <div class="edit-input-group">
+                                        <input type="text" class="form-control" id="user_name_input" value="{{ user.user_name }}">
+                                        <div class="edit-buttons">
+                                            <button type="button" class="btn btn-success" onclick="saveField('user_name')">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger" onclick="cancelEdit('user_name')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-building"></i>
+                                    Департамент
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div id="departments_display" class="info-value">
+                                        {% if user.departments %}
+                                        {{ user.departments }}
+                                        {% else %}
+                                        <span class="empty-value">Не указан</span>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="edit-btn" onclick="editField('departments', '{{ user.departments|default:''|escapejs }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="departments_edit" class="edit-field">
+                                    <div class="edit-input-group">
+                                        <input type="text" class="form-control" id="departments_input" value="{{ user.departments|default:'' }}">
+                                        <div class="edit-buttons">
+                                            <button type="button" class="btn btn-success" onclick="saveField('departments')">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger" onclick="cancelEdit('departments')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-briefcase"></i>
+                                    Должность
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div id="occupations_display" class="info-value">
+                                        {% if user.occupations %}
+                                        {{ user.occupations }}
+                                        {% else %}
+                                        <span class="empty-value">Не указана</span>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="edit-btn" onclick="editField('occupations', '{{ user.occupations|default:''|escapejs }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="occupations_edit" class="edit-field">
+                                    <div class="edit-input-group">
+                                        <input type="text" class="form-control" id="occupations_input" value="{{ user.occupations|default:'' }}">
+                                        <div class="edit-buttons">
+                                            <button type="button" class="btn btn-success" onclick="saveField('occupations')">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger" onclick="cancelEdit('occupations')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-shield-check"></i>
+                                    Уровень доступа
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div id="access_level_display" class="info-value">{{ user.access_level }}</div>
+                                    <button type="button" class="edit-btn" onclick="editField('access_level', '')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="access_level_edit" class="edit-field">
+                                    <div class="btn-group d-flex flex-wrap" role="group" aria-label="Уровень пользователя">
+                                        {% for choice in access_level_choices %}
+                                        <input
+                                                type="checkbox"
+                                                class="btn-check"
+                                                id="btncheck{{ forloop.counter }}"
+                                                name="access_level"
+                                                value="{{ choice.0 }}"
+                                                {% if choice.0 in user.access_level %}checked{% endif %}
+                                                autocomplete="off"
+                                        >
+                                        <label class="btn btn-outline-primary" for="btncheck{{ forloop.counter }}">
+                                            {{ choice.1 }}
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-success btn-sm" onclick="saveField('access_level')">
+                                            <i class="bi bi-check"></i> Сохранить
+                                        </button>
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="cancelEdit('access_level')">
+                                            <i class="bi bi-x"></i> Отмена
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Контактная информация -->
+                    <div class="info-section">
+                        <h5 class="section-title">
+                            <i class="bi bi-chat-dots"></i>
+                            Контактная информация
+                        </h5>
+
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-telephone"></i>
+                                    Телефон
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div id="phone_number_display" class="info-value">
+                                        {% if user.phone_number %}
+                                        {{ user.phone_number }}
+                                        {% else %}
+                                        <span class="empty-value">Не указан</span>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="edit-btn" onclick="editField('phone_number', '{{ user.phone_number|default:''|escapejs }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="phone_number_edit" class="edit-field">
+                                    <div class="edit-input-group">
+                                        <input type="text" class="form-control" id="phone_number_input" value="{{ user.phone_number|default:'' }}">
+                                        <div class="edit-buttons">
+                                            <button type="button" class="btn btn-success" onclick="saveField('phone_number')">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger" onclick="cancelEdit('phone_number')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-envelope"></i>
+                                    Email
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div id="email_display" class="info-value">
+                                        {% if user.email %}
+                                        {{ user.email }}
+                                        {% else %}
+                                        <span class="empty-value">Не указан</span>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="edit-btn" onclick="editField('email', '{{ user.email|default:''|escapejs }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="email_edit" class="edit-field">
+                                    <div class="edit-input-group">
+                                        <input type="email" class="form-control" id="email_input" value="{{ user.email|default:'' }}">
+                                        <div class="edit-buttons">
+                                            <button type="button" class="btn btn-success" onclick="saveField('email')">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger" onclick="cancelEdit('email')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-telegram"></i>
+                                    Telegram ID
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div id="telegram_display" class="info-value">
+                                        {% if user.telegram %}
+                                        {{ user.telegram }}
+                                        {% else %}
+                                        <span class="empty-value">Не привязан</span>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="edit-btn" onclick="editField('telegram', '{{ user.telegram|default:''|escapejs }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="telegram_edit" class="edit-field">
+                                    <div class="edit-input-group">
+                                        <input type="text" class="form-control" id="telegram_input" value="{{ user.telegram|default:'' }}">
+                                        <div class="edit-buttons">
+                                            <button type="button" class="btn btn-success" onclick="saveField('telegram')">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger" onclick="cancelEdit('telegram')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Информация о пропуске -->
+                    <div class="info-section">
+                        <h5 class="section-title">
+                            <i class="bi bi-credit-card-2-front"></i>
+                            Информация о пропуске
+                        </h5>
+
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-upc-scan"></i>
+                                    Код пропуска
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div id="uid_card_display" class="info-value">
+                                        {% if user.uid_card %}
+                                        {{ user.uid_card }}
+                                        {% else %}
+                                        <span class="empty-value">Не привязан</span>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="edit-btn" onclick="editField('uid_card', '{{ user.uid_card|default:''|escapejs }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="uid_card_edit" class="edit-field">
+                                    <div class="edit-input-group">
+                                        <input type="text" class="form-control" id="uid_card_input" value="{{ user.uid_card|default:'' }}">
+                                        <div class="edit-buttons">
+                                            <button type="button" class="btn btn-success" onclick="saveField('uid_card')">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger" onclick="cancelEdit('uid_card')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-key"></i>
+                                    Код активации
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div id="code_activation_display" class="info-value">
+                                        {% if user.code_activation %}
+                                        {{ user.code_activation }}
+                                        {% else %}
+                                        <span class="empty-value">Не указан</span>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="edit-btn" onclick="editField('code_activation', '{{ user.code_activation|default:''|escapejs }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="code_activation_edit" class="edit-field">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="code_activation_input" value="{{ user.code_activation|default:'' }}">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="generateCode()">Сгенерировать</button>
+                                        <button type="button" class="btn btn-success" onclick="saveField('code_activation')">
+                                            <i class="bi bi-check"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger" onclick="cancelEdit('code_activation')">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Информация о доступах -->
+                    <div class="info-section">
+                        <h5 class="section-title">
+                            <i class="bi bi-door-open"></i>
+                            Информация о доступах
+                        </h5>
+
+                        <div class="row">
+                            <!-- Аудитории -->
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        <i class="bi bi-building"></i>
+                                        Аудитории
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <div id="auditory_display" class="info-value">
+                                            {% if user.user_acesses.auditory %}
+                                            {% for auditory in user.user_acesses.auditory %}
+                                            <span class="badge bg-primary me-1">{{ auditory }}</span>
+                                            {% endfor %}
+                                            {% else %}
+                                            <span class="empty-value">Не указаны</span>
+                                            {% endif %}
+                                        </div>
+                                        <button type="button" class="edit-btn" onclick="editField('auditory', '{{ user.user_acesses.auditory|join:',' }}')">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div id="auditory_edit" class="edit-field">
+                                        <div class="edit-input-group">
+                                            <label for="auditoryInput" class="form-label">Введите аудитории (через запятую):</label>
+                                            <input type="text" class="form-control" id="auditory_input" placeholder="025,118,217" value="{{ user.user_acesses.auditory|join:',' }}">
+                                            <div class="edit-buttons mt-2">
+                                                <button type="button" class="btn btn-success" onclick="saveField('auditory')">
+                                                    <i class="bi bi-check"></i> Сохранить
+                                                </button>
+                                                <button type="button" class="btn btn-danger" onclick="cancelEdit('auditory')">
+                                                    <i class="bi bi-x"></i> Отмена
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        <!-- Устройства -->
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="bi bi-cpu"></i>
+                                    Устройства
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div id="devices_display" class="info-value">
+                                        {% if user.user_acesses.devices %}
+                                        <div class="devices-list">
+                                            {% for device in user.user_acesses.devices %}
+                                            <span class="badge bg-success me-1 mb-1">{{ device }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <span class="empty-value">Устройства не назначены</span>
+                                        {% endif %}
+                                    </div>
+                                    <a href="{% url 'user_update' user.pk %}" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-gear"></i> Настроить доступы
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Информация об автомобиле -->
+                    <div class="info-section">
+                        <h5 class="section-title">
+                            <i class="bi bi-car-front"></i>
+                            Информация об автомобиле
+                        </h5>
+
+                        {% if cars %}
+                        <div class="car-info">
+                            <div class="car-plate">{{ cars.car_plate_number }}</div>
+
+                            <div class="car-details">
+                                <div class="car-detail-item">
+                                    <div class="car-detail-label">
+                                        <i class="bi bi-tag"></i>
+                                        Марка и модель
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <div id="brand_model_display" class="car-detail-value">{{ cars.brand_model }}</div>
+                                        <button type="button" class="edit-btn" onclick="editField('brand_model', '{{ cars.brand_model|escapejs }}')">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div id="brand_model_edit" class="edit-field">
+                                        <div class="edit-input-group">
+                                            <input type="text" class="form-control" id="brand_model_input" value="{{ cars.brand_model }}">
+                                            <div class="edit-buttons">
+                                                <button type="button" class="btn btn-success" onclick="saveField('brand_model')">
+                                                    <i class="bi bi-check"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-danger" onclick="cancelEdit('brand_model')">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="car-detail-item">
+                                    <div class="car-detail-label">
+                                        <i class="bi bi-palette"></i>
+                                        Цвет
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <div id="color_display" class="car-detail-value">{{ cars.color }}</div>
+                                        <button type="button" class="edit-btn" onclick="editField('color', '{{ cars.color|escapejs }}')">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div id="color_edit" class="edit-field">
+                                        <div class="edit-input-group">
+                                            <input type="text" class="form-control" id="color_input" value="{{ cars.color }}">
+                                            <div class="edit-buttons">
+                                                <button type="button" class="btn btn-success" onclick="saveField('color')">
+                                                    <i class="bi bi-check"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-danger" onclick="cancelEdit('color')">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="time-access">
+                                <div class="time-access-label">
+                                    <i class="bi bi-clock"></i>
+                                    Время доступа
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div id="time_access_display" class="time-access-value">{{ cars.time_access }}</div>
+                                    <button type="button" class="edit-btn" onclick="editField('time_access', '{{ cars.time_access|escapejs }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="time_access_edit" class="edit-field">
+                                    <div class="edit-input-group">
+                                        <input type="text" class="form-control" id="time_access_input" value="{{ cars.time_access }}">
+                                        <div class="edit-buttons">
+                                            <button type="button" class="btn btn-success" onclick="saveField('time_access')">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger" onclick="cancelEdit('time_access')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="no-info">
+                            <i class="bi bi-car-front-fill"></i>
+                            <strong>Информация об автомобиле отсутствует</strong>
+                        </div>
+
+                        <div class="text-center">
+                            <a class="btn btn-add" href="{% url 'edit_access' user.pk %}">
+                                <i class="bi bi-plus-circle"></i>
+                                Добавить информацию об автомобиле
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="action-buttons">
+                        <a class="btn-back" href="{% url 'user_list' %}">
+                            <i class="bi bi-arrow-left"></i>
+                            Вернуться к списку
                         </a>
-                        <a class="btn btn-primary w-100" href="{% url 'user_list' %}">
+
+                        <a class="btn-edit" href="{% url 'edit_access' user.pk %}">
+                            <i class="bi bi-gear-fill"></i>
+                            Настроить доступ
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="no-info">
+                        <i class="bi bi-person-x-fill" style="font-size: 3rem;"></i>
+                        <p class="mb-0">Пользователь не найден в системе.</p>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a class="btn-back" href="{% url 'user_list' %}">
+                            <i class="bi bi-arrow-left"></i>
                             Вернуться к списку пользователей
                         </a>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<style>
+    /* Основные стили */
+    .user-card {
+        background: var(--surface-1, #2c3034);
+        border-radius: var(--radius-lg, 1rem);
+        border: 1px solid var(--border-light, #3d3d42);
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .user-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #1e88e5, #1565c0);
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+        opacity: 0.6;
+    }
+
+    .header-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .user-avatar {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+        margin: 0 auto 1rem;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    /* Статус регистрации */
+    .status-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .status-label {
+        color: var(--text-secondary, #b0b0b0);
+        font-size: 0.875rem;
+    }
+
+    /* Секции информации */
+    .info-section {
+        margin-bottom: 2rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-light, #3d3d42);
+        color: var(--text-primary, #f5f5f5);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .info-item {
+        background: var(--surface-2, #383f42);
+        border-radius: var(--radius, 0.5rem);
+        padding: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .info-item:hover {
+        background: var(--surface-3, #323236);
+        transform: translateY(-2px);
+    }
+
+    .info-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary, #b0b0b0);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-value {
+        font-weight: 600;
+        color: var(--text-primary, #f5f5f5);
+        word-break: break-word;
+    }
+
+    .empty-value {
+        color: var(--text-tertiary, #808080);
+        font-style: italic;
+    }
+
+    /* Статусы */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.375rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        gap: 0.375rem;
+    }
+
+    .status-pending {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .status-registered {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .status-waiting {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+    }
+
+    /* Информация об автомобиле */
+    .car-info {
+        background: var(--surface-2, #383f42);
+        border-radius: var(--radius, 0.5rem);
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .car-plate {
+        display: inline-block;
+        background: #ffeb3b;
+        color: #000;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        font-weight: 700;
+        font-family: monospace;
+        letter-spacing: 1px;
+        margin-bottom: 1rem;
+        border: 2px solid #000;
+    }
+
+    .car-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .car-detail-item {
+        background: var(--surface-3, #323236);
+        padding: 1rem;
+        border-radius: var(--radius-sm, 0.375rem);
+    }
+
+    .car-detail-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary, #b0b0b0);
+        margin-bottom: 0.5rem;
+    }
+
+    .car-detail-value {
+        font-weight: 600;
+        color: var(--text-primary, #f5f5f5);
+    }
+
+    .time-access {
+        background: var(--surface-3, #323236);
+        padding: 1rem;
+        border-radius: var(--radius-sm, 0.375rem);
+        margin-top: 1rem;
+    }
+
+    .time-access-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary, #b0b0b0);
+        margin-bottom: 0.5rem;
+    }
+
+    .time-access-value {
+        font-weight: 600;
+        color: var(--text-primary, #f5f5f5);
+    }
+
+    /* Сообщение об отсутствии информации */
+    .no-info {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+        padding: 1.5rem;
+        border-radius: var(--radius, 0.5rem);
+        text-align: center;
+        margin: 1rem 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .no-info i {
+        font-size: 2rem;
+    }
+
+    /* Кнопки действий */
+    .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn-back {
+        background: var(--surface-3, #323236);
+        color: var(--text-primary, #f5f5f5);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius, 0.5rem);
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-back:hover {
+        background: var(--surface-4, #3d3d42);
+        transform: translateY(-2px);
+        text-decoration: none;
+        color: var(--text-primary, #f5f5f5);
+    }
+
+    .btn-edit {
+        background: linear-gradient(135deg, #1e88e5, #1565c0);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius, 0.5rem);
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-edit:hover {
+        background: linear-gradient(135deg, #1976d2, #0d47a1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 136, 229, 0.3);
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-add {
+        background: linear-gradient(135deg, #43a047, #2e7d32);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius, 0.5rem);
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        text-decoration: none;
+    }
+
+    .btn-add:hover {
+        background: linear-gradient(135deg, #388e3c, #1b5e20);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(67, 160, 71, 0.3);
+        text-decoration: none;
+        color: white;
+    }
+
+    .card-id {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--surface-3, #323236);
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius, 0.5rem);
+        font-family: monospace;
+        font-weight: 600;
+        color: var(--text-primary, #f5f5f5);
+        margin-bottom: 1rem;
+    }
+
+    /* Улучшенные стили для кнопок редактирования */
+    .edit-btn {
+        background: rgba(30, 136, 229, 0.2);
+        border: none;
+        color: rgba(255, 255, 255, 0.7);
+        padding: 0.35rem;
+        margin-left: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+    }
+
+    .edit-btn:hover {
+        background: rgba(30, 136, 229, 0.4);
+        color: rgba(255, 255, 255, 1);
+        transform: scale(1.1);
+    }
+
+    .edit-btn i {
+        font-size: 1rem;
+    }
+
+    .edit-field {
+        margin-top: 0.5rem;
+        display: none;
+    }
+
+    /* Улучшенные стили для полей ввода */
+    .edit-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .edit-input-group .form-control {
+        width: 100%;
+        background: var(--surface-3, #323236);
+        border: 1px solid var(--border-light, #3d3d42);
+        color: var(--text-primary, #f5f5f5);
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.375rem;
+    }
+
+    .edit-buttons {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+
+    /* Стили для Bootstrap кнопок */
+    .btn-check {
+        position: absolute;
+        clip: rect(0, 0, 0, 0);
+        pointer-events: none;
+    }
+
+    .btn-outline-primary {
+        color: #0d6efd;
+        border-color: #0d6efd;
+        background-color: transparent;
+        margin-right: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .btn-outline-primary:hover {
+        color: #fff;
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .btn-check:checked + .btn-outline-primary {
+        color: #fff;
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .btn-group {
+        position: relative;
+        display: inline-flex;
+        vertical-align: middle;
+    }
+
+    .btn-group > .btn {
+        position: relative;
+        flex: 1 1 auto;
+    }
+
+    /* Стили для бейджей */
+    .badge {
+        display: inline-block;
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 700;
+        line-height: 1;
+        color: #fff;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+    }
+
+    .bg-primary {
+        background-color: #0d6efd !important;
+    }
+
+    .bg-success {
+        background-color: #198754 !important;
+    }
+
+    .devices-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .action-buttons {
+            grid-template-columns: 1fr;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .car-details {
+            grid-template-columns: 1fr;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .status-container {
+            align-items: flex-start;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .btn-group {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+
+<script>
+    // Функция для редактирования поля
+    function editField(fieldName, currentValue) {
+        // Скрываем отображение и показываем редактирование
+        document.getElementById(fieldName + '_display').style.display = 'none';
+        document.getElementById(fieldName + '_edit').style.display = 'block';
+
+        // Если есть input, устанавливаем текущее значение
+        const input = document.getElementById(fieldName + '_input');
+        if (input) {
+            // Декодируем HTML-сущности, если они есть
+            input.value = currentValue.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+            input.focus();
+        }
+    }
+
+    // Функция для отмены редактирования
+    function cancelEdit(fieldName) {
+        document.getElementById(fieldName + '_display').style.display = 'block';
+        document.getElementById(fieldName + '_edit').style.display = 'none';
+    }
+
+    function saveField(fieldName) {
+        let fieldValue;
+
+        // Получаем значение в зависимости от типа поля
+        if (fieldName === 'access_level') {
+            const checkboxes = document.querySelectorAll('input[name="access_level"]:checked');
+            fieldValue = Array.from(checkboxes).map(cb => cb.value).join(',');
+        } else if (fieldName === 'reg') {
+            const radio = document.querySelector('input[name="reg"]:checked');
+            fieldValue = radio ? radio.value : '';
+        } else if (fieldName === 'auditory') {
+            // Обработка аудиторий - разделяем по запятой и убираем лишние пробелы
+            const auditoryInput = document.getElementById('auditory_input').value;
+            fieldValue = auditoryInput; // Отправляем строку как естьи
+        } else {
+            const input = document.getElementById(fieldName + '_input');
+            fieldValue = input ? input.value : '';
+        }
+
+        // Устанавливаем значения в скрытые поля формы
+        document.getElementById('field_name').value = fieldName;
+        document.getElementById('field_value').value = fieldValue;
+
+
+
+        // Отправляем форму
+        const form = document.getElementById('userForm');
+        form.submit();
+    }
+
+    // Функция генерации случайного 8-символьного кода
+    function generateCode() {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+            code += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        // Устанавливаем значение в поле code_activation
+        document.getElementById('code_activation_input').value = code;
+    }
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+
+
+        // Отладочная информация для чекбоксов уровня доступа
+        const accessLevelCheckboxes = document.querySelectorAll('input[name="access_level"]');
+
+
+        accessLevelCheckboxes.forEach((checkbox, index) => {
+
+        });
+    });
+</script>
 {% endblock %}

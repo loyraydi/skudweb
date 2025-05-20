@@ -68,12 +68,13 @@ class AdminUserCreationForm(forms.ModelForm):
 class DeviceForm(forms.ModelForm):
     class Meta:
         model = Device
+
         fields = [
             "name", "mac", "device_activated", "device_api",
-            "calendar_regular", "calendar_exception", "trying_max"
+            "calendar_regular", "calendar_exception", "trying_max", "device_status", "ip"
         ]
         widgets = {
-            'device_api': forms.Textarea(attrs={"rows": 6}),
+            'device_api': forms.Textarea(attrs={'class': 'form-control', 'rows': 10}),
             'calendar_regular': forms.HiddenInput(),
             'calendar_exception': forms.HiddenInput(),
         }
@@ -83,11 +84,7 @@ class DeviceForm(forms.ModelForm):
 
         # Устанавливаем значение по умолчанию только если форма создаётся, а не редактируется
         if not self.instance.pk:
-            self.fields['device_api'].initial = json.dumps({
-                "open": [""],
-                "checkabe": "",
-                "commands": [""]
-            }, indent=4)
+            self.fields['device_api'].initial = json.dumps({}, indent=4)
 
     def clean_mac(self):
         mac = self.cleaned_data.get("mac")
@@ -97,22 +94,53 @@ class DeviceForm(forms.ModelForm):
 
     def clean_calendar_regular(self):
         data = self.cleaned_data.get("calendar_regular")
-        try:
-            return json.loads(data) if data else {}
-        except json.JSONDecodeError:
-            raise forms.ValidationError("Ошибка в формате JSON")
+        # Для JSONField мы должны вернуть Python объект, а не строку JSON
+        if isinstance(data, str):
+            if data == 'null':
+                return None
+            try:
+                return json.loads(data)
+            except json.JSONDecodeError:
+                raise forms.ValidationError("Ошибка в формате JSON")
+        return data  # Если это уже словарь, возвращаем как есть
 
     def clean_calendar_exception(self):
         data = self.cleaned_data.get("calendar_exception")
-        try:
-            return json.loads(data) if data else {}
-        except json.JSONDecodeError:
-            raise forms.ValidationError("Ошибка в формате JSON")
+        # Для JSONField мы должны вернуть Python объект, а не строку JSON
+        if isinstance(data, str):
+            if data == 'null':
+                return None
+            try:
+                return json.loads(data)
+            except json.JSONDecodeError:
+                raise forms.ValidationError("Ошибка в формате JSON")
+        return data  # Если это уже словарь, возвращаем как есть
+
+    def clean_device_api(self):
+        """Валидация поля device_api"""
+        device_api = self.cleaned_data.get('device_api')
+
+        # Для JSONField мы должны вернуть Python объект, а не строку JSON
+        if isinstance(device_api, str):
+            try:
+                return json.loads(device_api)
+            except json.JSONDecodeError as e:
+                raise forms.ValidationError(f"Невалидный JSON: {str(e)}")
+        return device_api  # Если это уже словарь, возвращаем как есть
 
     def save(self, commit=True):
-        instance = super().save(commit=False)
-        if not instance.token:
-            instance.token = uuid.uuid4().hex
-        if commit:
-            instance.save()
-        return instance
+        # Если это новый объект, явно устанавливаем id_device
+        if not self.instance.pk:
+            # Используем метод get_next_id для получения следующего ID
+            self.instance.id_device = Device.get_next_id()
+
+        if self.cleaned_data.get('device_activated'):
+            self.instance.device_status = 'normal'
+        else:
+            self.instance.device_status = 'timed out'
+
+        # Генерируем token, если его нет
+        if not self.instance.token:
+            self.instance.token = uuid.uuid4().hex
+
+        return super().save(commit=commit)

@@ -56,8 +56,33 @@ class Logg(models.Model):
         return f"[{self.datetime}] {self.message}: {self.auditory_number}"
 
 
+class Logg_parking(models.Model):
+    datetime = models.CharField(max_length=32)
+    id_user = models.CharField(max_length=32)
+    message = models.TextField(max_length=100)
+
+    class Meta:
+
+        db_table = "logg_parking"
+
+    def __str__(self):
+        return f"[{self.datetime}] {self.id_user}: {self.message}"
+
+class Logg_access(models.Model):
+    datetime = models.CharField(max_length=32)
+    uid_card = models.CharField(max_length=32)
+    action = models.TextField(max_length=100)
+    auditory_number = models.CharField(max_length=32)
+
+    class Meta:
+
+        db_table = "logg_access"
+
+    def __str__(self):
+        return f"[{self.datetime}] {self.id_user}: {self.message}"
+
 class Device(models.Model):
-    id_device = models.BigAutoField(primary_key=True)
+    id_device = models.PositiveIntegerField(primary_key=True)
     ip = models.CharField(max_length=20, blank=True, null=True)
     device_activated = models.BooleanField(default=True)
     mac = models.CharField(max_length=20, unique=True)
@@ -81,3 +106,11 @@ class Device(models.Model):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def get_next_id(cls):
+        """Получить следующий доступный ID, гарантированно больше 0"""
+        from django.db.models import Max
+        max_id = cls.objects.aggregate(Max('id_device'))['id_device__max']
+        # Если нет записей или максимальный ID равен 0, вернуть 1
+        return max(1, (max_id or 0) + 1)

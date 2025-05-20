@@ -3,70 +3,344 @@
 {% block content %}
 
 <style>
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr); /* 3 колонки */
-        grid-gap: 10px;
-        min-height: 60vh;
-        padding: 20px;
+    /* Основные стили дашборда */
+    body {
+        transition: margin-left 0.3s ease;
     }
 
-    .grid-item {
-        color: white;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgb(33, 37, 41);
-        min-height: 100px;
+    /* Стиль для сдвига контента при открытом меню */
+    body.sidebar-active .dashboard-container {
+        margin-left: 10px; /* Ширина бокового меню */
+        transition: margin-left 0.3s ease;
+    }
+
+    .dashboard-container {
+        padding: 5rem;
+        transition: margin-left 0.3s ease;
+        position: relative;
+        z-index: 1; /* Меньше чем у меню */
+    }
+
+    /* Стили для карточек, чтобы они не перекрывали меню */
+    .dashboard-card {
+        position: relative;
+        z-index: 1; /* Меньше чем у меню */
+    }
+
+    /* Остальные стили остаются без изменений */
+    .dashboard-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+    }
+
+    .dashboard-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: #fff;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .dashboard-title i {
+        margin-right: 0.75rem;
+        color: #4a6cf7;
+        font-size: 1.85rem;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .dashboard-btn {
+        background-color: #2c3034;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
         display: flex;
         align-items: center;
         justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
-    .placeholder {
-        visibility: hidden; /* По умолчанию скрываем */
-        border: 2px dashed gray;
-        background: rgba(255, 255, 255, 0.1);
-        min-height: 100px;
+
+    .dashboard-btn i {
+        font-size: 1.25rem;
+        margin-right: 0.5rem;
     }
-    .edit-mode .placeholder {
-        visibility: visible; /* Показываем в режиме редактирования */
+
+    .dashboard-btn:hover {
+        background-color: #3a3f44;
+        transform: translateY(-2px);
     }
-    .page-title {
+
+    .dashboard-btn.primary {
+        background-color: #4a6cf7;
+    }
+
+    .dashboard-btn.primary:hover {
+        background-color: #3a5ce6;
+    }
+
+    .dashboard-btn.danger {
+        background-color: #dc3545;
+    }
+
+    /* Сетка дашборда */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (max-width: 1200px) {
+        .dashboard-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Карточки дашборда */
+    .dashboard-card {
+        background-color: #212529;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #2c3034;
+    }
+
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        border-color: #3497d9;
+    }
+
+    .card-header {
+        padding: 1.25rem;
+        border-bottom: 1px solid #2c3034;
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
-    .button-group {
-        display: flex;
-        gap: 10px; /* Расстояние между кнопками */
-    }
-    .edit-button, .icon-button {
-        font-size: 20px;
-        background: none;
-        border: none;
+
+    .card-title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
         color: #fff;
-        cursor: pointer;
-    }
-    .icon-button:hover {
-        color: #0d6dfb; /* Изменение цвета при наведении */
-    }
-    .icon-button:focus {
-        outline: none;
-    }
-    .edit-button i {
-        color: #ffffff; /* Полупрозрачный белый */
+        display: flex;
+        align-items: center;
     }
 
-    .edit-button:hover i {
-        color: #0d6dfb; /* Чистый белый при наведении */
+    .card-title i {
+        margin-right: 0.75rem;
+        font-size: 1.25rem;
     }
-    #dashboard {
+
+    .card-body {
+        padding: 1.25rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card-footer {
+        padding: 0.75rem 1.25rem;
+        border-top: 1px solid #2c3034;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.875rem;
+        color: #adb5bd;
+    }
+
+    /* Стили для пользовательской карточки */
+    .user-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .user-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        background-color: #4a6cf7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #fff;
+        margin-right: 1rem;
+    }
+
+    .user-details {
+        flex-grow: 1;
+    }
+
+    .user-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 0.25rem;
+    }
+
+    .user-position {
+        font-size: 0.875rem;
+        color: #adb5bd;
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #2c3034;
+    }
+
+    .info-row:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-size: 0.875rem;
+        color: #adb5bd;
+        width: 40%;
+    }
+
+    .info-value {
+        font-size: 0.875rem;
+        color: #fff;
+        font-weight: 500;
+        width: 60%;
+    }
+
+    /* Стили для устройств */
+    .device-status {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .device-status.active {
+        background-color: rgba(25, 135, 84, 0.15);
+        color: #19b159;
+    }
+
+    .device-status.inactive {
+        background-color: rgba(220, 53, 69, 0.15);
+        color: #ff5c77;
+    }
+
+    .device-status i {
+        margin-right: 0.25rem;
+        font-size: 0.875rem;
+    }
+
+    /* Стили для логов */
+    .logs-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .log-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #2c3034;
+        font-size: 0.875rem;
+    }
+
+    .log-item:last-child {
+        border-bottom: none;
+    }
+
+    .log-time {
+        font-size: 0.75rem;
+        color: #3497d9;
+        font-weight: 600;
+        margin-right: 0.5rem;
+    }
+
+    .log-message {
+        color: #e9ecef;
+    }
+
+    .log-location {
+        color: #adb5bd;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        display: block;
+    }
+
+    /* Стили для плейсхолдеров */
+    .placeholder-card {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 2px dashed #495057;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        visibility: hidden;
+        cursor: pointer;
+    }
+
+    .edit-mode .placeholder-card {
+        visibility: visible;
+    }
+
+    .placeholder-icon {
+        font-size: 2rem;
+        color: #495057;
+    }
+
+    /* Стили для режима редактирования */
+    .edit-mode .dashboard-card {
+        cursor: grab;
+    }
+
+    .edit-mode .dashboard-card:active {
+        cursor: grabbing;
+    }
+
+    .sortable-ghost {
+        opacity: 0.5;
+        background-color: #4a6cf7 !important;
+    }
+
+    /* Стили для уведомлений */
+    #dashboard-notifications {
         position: fixed;
         bottom: 20px;
         right: 20px;
         z-index: 9999;
     }
 
-    .dashboard-container {
+    .dashboard-notification {
         background-color: #212529;
         color: white;
         padding: 15px;
@@ -85,17 +359,12 @@
         overflow: hidden;
     }
 
-    .dashboard.show {
+    .dashboard-notification.show {
         transform: translateX(0);
         opacity: 1;
     }
 
-    .dashboard.hide {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-
-    .dashboard-icon {
+    .notification-icon {
         margin-right: 15px;
         font-size: 20px;
         display: flex;
@@ -103,22 +372,22 @@
         justify-content: center;
     }
 
-    .dashboard-content {
+    .notification-content {
         flex-grow: 1;
     }
 
-    .dashboard-title {
+    .notification-title {
         font-weight: bold;
         margin-bottom: 5px;
         font-size: 16px;
     }
 
-    .dashboard-message {
+    .notification-message {
         font-size: 14px;
         opacity: 0.9;
     }
 
-    .dashboard-close {
+    .notification-close {
         cursor: pointer;
         font-size: 18px;
         margin-left: 10px;
@@ -126,11 +395,11 @@
         transition: opacity 0.2s;
     }
 
-    .dashboard-close:hover {
+    .notification-close:hover {
         opacity: 1;
     }
 
-    .dashboard-progress {
+    .notification-progress {
         position: absolute;
         bottom: 0;
         left: 0;
@@ -141,355 +410,1998 @@
     }
 
     /* Типы уведомлений */
-    .dashboard-success {
-        border-left-color: #4a6cf7;
+    .notification-success {
+        border-left-color: #19b159;
     }
 
-    .dashboard-error {
+    .notification-error {
         border-left-color: #dc3545;
     }
 
-    .dashboard-warning {
+    .notification-warning {
         border-left-color: #ffc107;
     }
 
-    .dashboard-info {
+    .notification-info {
         border-left-color: #4a6cf7;
+    }
+
+    /* Стили для скроллбара */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #2c3034;
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #495057;
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #6c757d;
+    }
+
+    /* Стили для бокового меню */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 250px;
+        z-index: 1000; /* Выше чем у контента */
+    }
+    .view-details {
+        color: rgba(52,152,219,0.9);
+        text-decoration: none;
+    }
+    .view-details:link {
+        text-decoration: none;
+    }
+    .view-details:visited {
+        text-decoration: none;
+    }
+    .view-details:hover {
+        text-decoration: underline;
+    }
+    .view-details:active {
+        text-decoration: underline;
+    }
+
+    /* Стили для списка устройств */
+    .devices-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .device-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #2c3034;
+        font-size: 0.875rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .device-item:last-child {
+        border-bottom: none;
+    }
+
+    .device-name {
+        font-weight: 500;
+        color: #e9ecef;
+    }
+
+    /* Стили для модального окна выбора виджетов */
+    .widget-selector-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 1050;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+    }
+
+    .widget-selector-modal.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .widget-selector-content {
+        background-color: #212529;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        padding: 1.5rem;
+    }
+
+    .widget-selector-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #2c3034;
+    }
+
+    .widget-selector-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #fff;
+        margin: 0;
+    }
+
+    .widget-selector-close {
+        background: none;
+        border: none;
+        color: #adb5bd;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .widget-selector-close:hover {
+        color: #fff;
+    }
+
+    .widget-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .widget-item {
+        background-color: #2c3034;
+        border-radius: 8px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        text-align: center;
+    }
+
+    .widget-item:hover {
+        background-color: #343a40;
+        transform: translateY(-2px);
+    }
+
+    .widget-item.selected {
+        border-color: #4a6cf7;
+        background-color: rgba(74, 108, 247, 0.1);
+    }
+
+    .widget-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: #4a6cf7;
+    }
+
+    .widget-name {
+        font-weight: 500;
+        color: #fff;
+        margin-bottom: 0.25rem;
+    }
+
+    .widget-description {
+        font-size: 0.75rem;
+        color: #adb5bd;
+    }
+
+    .widget-selector-footer {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #2c3034;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    /* Стили для карточки активных устройств */
+    .active-devices-count {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #19b159;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    /* Стили для карточки статистики */
+    .stats-card .card-body {
+        padding: 0;
+    }
+
+    .stat-item {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #2c3034;
+        display: flex;
+        align-items: center;
+    }
+
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+
+    .stat-icon.blue {
+        background-color: rgba(74, 108, 247, 0.15);
+        color: #4a6cf7;
+    }
+
+    .stat-icon.green {
+        background-color: rgba(25, 177, 89, 0.15);
+        color: #19b159;
+    }
+
+    .stat-icon.orange {
+        background-color: rgba(247, 184, 74, 0.15);
+        color: #f7b84a;
+    }
+
+    .stat-icon.red {
+        background-color: rgba(220, 53, 69, 0.15);
+        color: #dc3545;
+    }
+
+    .stat-details {
+        flex-grow: 1;
+    }
+
+    .stat-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: #adb5bd;
+    }
+
+    /* Стили для карточки погоды */
+    .weather-card .card-body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .weather-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #f7b84a;
+    }
+
+    .weather-temp {
+        font-size: 2rem;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 0.5rem;
+    }
+
+    .weather-desc {
+        font-size: 1rem;
+        color: #adb5bd;
+        margin-bottom: 1rem;
+    }
+
+    .weather-details {
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
+        margin-top: 1rem;
+    }
+
+    .weather-detail {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .weather-detail-icon {
+        font-size: 1.25rem;
+        color: #4a6cf7;
+        margin-bottom: 0.25rem;
+    }
+
+    .weather-detail-value {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #fff;
+    }
+
+    .weather-detail-label {
+        font-size: 0.75rem;
+        color: #adb5bd;
+    }
+
+    /* Стили для карточки календаря */
+    .calendar-card .card-body {
+        padding: 0;
+    }
+
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #2c3034;
+    }
+
+    .calendar-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .calendar-nav {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .calendar-nav-btn {
+        background: none;
+        border: none;
+        color: #adb5bd;
+        cursor: pointer;
+        padding: 0.25rem;
+        font-size: 1rem;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+
+    .calendar-nav-btn:hover {
+        color: #fff;
+        background-color: #2c3034;
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        padding: 0.5rem;
+    }
+
+    .calendar-day-name {
+        text-align: center;
+        font-size: 0.75rem;
+        color: #adb5bd;
+        padding: 0.5rem 0;
+    }
+
+    .calendar-day {
+        text-align: center;
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+        color: #e9ecef;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+
+    .calendar-day:hover {
+        background-color: #2c3034;
+    }
+
+    .calendar-day.today {
+        background-color: rgba(74, 108, 247, 0.15);
+        color: #4a6cf7;
+        font-weight: 600;
+    }
+
+    .calendar-day.other-month {
+        color: #495057;
+    }
+
+    .calendar-day.has-event {
+        position: relative;
+    }
+
+    .calendar-day.has-event::after {
+        content: '';
+        position: absolute;
+        bottom: 2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background-color: #4a6cf7;
+    }
+
+    .calendar-events {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid #2c3034;
+    }
+
+    .calendar-events-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 0.5rem;
+    }
+
+    .calendar-event {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #2c3034;
+    }
+
+    .calendar-event:last-child {
+        border-bottom: none;
+    }
+
+    .calendar-event-time {
+        font-size: 0.75rem;
+        color: #4a6cf7;
+        font-weight: 600;
+        margin-right: 0.5rem;
+        min-width: 50px;
+    }
+
+    .calendar-event-title {
+        font-size: 0.875rem;
+        color: #e9ecef;
+    }
+
+    /* Стили для карточки задач */
+    .tasks-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .task-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #2c3034;
+    }
+
+    .task-item:last-child {
+        border-bottom: none;
+    }
+
+    .task-checkbox {
+        margin-right: 0.75rem;
+    }
+
+    .task-checkbox input {
+        display: none;
+    }
+
+    .task-checkbox label {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 2px solid #495057;
+        border-radius: 4px;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .task-checkbox input:checked + label {
+        background-color: #4a6cf7;
+        border-color: #4a6cf7;
+    }
+
+    .task-checkbox input:checked + label::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-size: 12px;
+    }
+
+    .task-content {
+        flex-grow: 1;
+    }
+
+    .task-title {
+        font-size: 0.875rem;
+        color: #e9ecef;
+        margin-bottom: 0.25rem;
+    }
+
+    .task-checkbox input:checked ~ .task-content .task-title {
+        text-decoration: line-through;
+        color: #6c757d;
+    }
+
+    .task-meta {
+        display: flex;
+        align-items: center;
+        font-size: 0.75rem;
+        color: #adb5bd;
+    }
+
+    .task-due {
+        margin-right: 0.75rem;
+    }
+
+    .task-priority {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.125rem 0.375rem;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .task-priority.high {
+        background-color: rgba(220, 53, 69, 0.15);
+        color: #dc3545;
+    }
+
+    .task-priority.medium {
+        background-color: rgba(247, 184, 74, 0.15);
+        color: #f7b84a;
+    }
+
+    .task-priority.low {
+        background-color: rgba(25, 177, 89, 0.15);
+        color: #19b159;
+    }
+
+    /* Стили для карточки заметок */
+    .notes-card .card-body {
+        padding: 0;
+    }
+
+    .notes-toolbar {
+        display: flex;
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid #2c3034;
+    }
+
+    .notes-toolbar-btn {
+        background: none;
+        border: none;
+        color: #adb5bd;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        font-size: 1rem;
+        border-radius: 4px;
+        transition: all 0.2s;
+        margin-right: 0.5rem;
+    }
+
+    .notes-toolbar-btn:hover {
+        color: #fff;
+        background-color: #2c3034;
+    }
+
+    .notes-content {
+        padding: 1.25rem;
+        min-height: 150px;
+        color: #e9ecef;
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+
+    /* Стили для карточки графика */
+    .chart-container {
+        width: 100%;
+        height: 200px;
+    }
+
+    /* Стили для карточки с кнопкой удаления */
+    .card-remove-btn {
+        background: none;
+        border: none;
+        color: #adb5bd;
+        cursor: pointer;
+        padding: 0.25rem;
+        font-size: 1rem;
+        border-radius: 4px;
+        transition: all 0.2s;
+        display: none;
+    }
+
+    .edit-mode .card-remove-btn {
+        display: block;
+    }
+
+    .card-remove-btn:hover {
+        color: #dc3545;
+        background-color: rgba(220, 53, 69, 0.1);
     }
 </style>
 
-<div class="container">
-
-
-
-    <h1 class="page-title">
-        Главная
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">
+            <i class='bx bxs-dashboard'></i>
+            Панель управления
+        </h1>
         <div class="button-group">
-            <button id="editModeToggle" class="edit-button">
+            <button id="addWidget" class="dashboard-btn primary">
+                <i class='bx bx-plus'></i>
+                Добавить виджет
+            </button>
+            <button id="editModeToggle" class="dashboard-btn">
                 <i class='bx bxs-edit-alt'></i>
+                Редактировать
             </button>
-            <button id="saveLayout" class="icon-button" style="visibility: hidden;">
+            <button id="saveLayout" class="dashboard-btn primary" style="display: none;">
                 <i class="bx bx-save"></i>
+                Сохранить
             </button>
         </div>
-    </h1>
+    </div>
 
-    <div id="dashboard"></div>
+    <div id="dashboard-notifications"></div>
 
-    <div class="grid-container" id="grid">
-        <div class="grid-item" id="lastUserCard">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    Последний зарегистрированный пользователь
+    <div class="dashboard-grid" id="grid">
+        <!-- Карточка последнего пользователя -->
+        <div class="dashboard-card" id="lastUserCard" data-widget-type="lastUser">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class='bx bxs-user'></i>
+                    Последний пользователь
+                </h3>
+                <span class="card-badge">
+                    <i class='bx bxs-time'></i>
+                    <button class="card-remove-btn">
+                        <i class='bx bx-x'></i>
+                    </button>
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">?</div>
+                    <div class="user-details">
+                        <div class="user-name" id="last_user_name">Загрузка...</div>
+                        <div class="user-position" id="last_user_occupations">Загрузка...</div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p><strong>Имя пользователя:</strong> <span id="last_user_name">Загрузка...</span></p>
-                    <p><strong>Должность:</strong> <span id="last_user_occupations">Загрузка...</span></p>
+                <div class="info-row">
+                    <div class="info-label">Статус:</div>
+                    <div class="info-value">
+                        <span class="device-status active">
+                            <i class='bx bxs-circle'></i>
+                            Активен
+                        </span>
+                    </div>
                 </div>
+                <div class="info-row">
+                    <div class="info-label">Дата регистрации:</div>
+                    <div class="info-value" id="last_user_date">Загрузка...</div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <span>ID: <span id="last_user_id">-</span></span>
+                <a href="#" id="user-details-link" class="view-details">Подробнее <i class='bx bx-right-arrow-alt'></i></a>
             </div>
         </div>
 
-        <div class="grid-item" id="deviceCard">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    Последнее зарегистрированное устройство
-                </div>
-                <div class="card-body">
-                    <p><strong>Название устройства:</strong> <span id="last_device_name">Загрузка...</span></p>
-                    <p><strong>Активировано:</strong> <span id="last_device_activated">Загрузка...</span></p>
-                </div>
+        <!-- Карточка активных устройств -->
+        <div class="dashboard-card" id="activeDevicesCard" data-widget-type="activeDevices">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class='bx bxs-devices'></i>
+                    Активные устройства
+                </h3>
+                <span class="card-badge">
+                    <i class='bx bxs-time'></i>
+                    <button class="card-remove-btn">
+                        <i class='bx bx-x'></i>
+                    </button>
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="active-devices-count" id="active-devices-count">0</div>
+                <ul id="active-devices-list" class="devices-list">
+                    <li class="device-item">
+                        <span class="device-name">Загрузка устройств...</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-footer">
+                <span>Всего: <span id="total-devices-count">0</span></span>
+                <a href="{% url 'device_list' %}" class="view-details">Все устройства <i class='bx bx-right-arrow-alt'></i></a>
             </div>
         </div>
 
-
-        <div class="grid-item" id="logsCard">
-            <div class="card">
-                <div class="card-header bg-info text-white">
+        <!-- Карточка логов -->
+        <div class="dashboard-card" id="logsCard" data-widget-type="logs">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class='bx bx-list-ul'></i>
                     Последние логи
-                </div>
-                <div class="card-body">
-                    <ul id="logs-list" class="list-group">
-                        <li class="list-group-item">Загрузка логов...</li>
-                    </ul>
-                </div>
+                </h3>
+                <span class="card-badge">
+                    <i class='bx bxs-time'></i>
+                    <button class="card-remove-btn">
+                        <i class='bx bx-x'></i>
+                    </button>
+                </span>
+            </div>
+            <div class="card-body">
+                <ul id="logs-list" class="logs-list">
+                    <li class="log-item">
+                        <span class="log-time">Загрузка логов...</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-footer">
+                <span>Всего: <span id="logs-count">0</span></span>
+                <a href="#logsModal" data-bs-toggle="modal" class="view-details" data-bs-target="#logsModal">Все логи <i class='bx bx-right-arrow-alt'></i></a>
             </div>
         </div>
 
-        <!-- Пустые места для вставки блоков -->
-        <div class="grid-item placeholder"></div>
-        <div class="grid-item placeholder"></div>
-        <div class="grid-item placeholder"></div>
+        <!-- Плейсхолдеры -->
+        <div class="placeholder-card" id="placeholder1">
+            <i class='bx bx-plus-circle placeholder-icon'></i>
+        </div>
+        <div class="placeholder-card" id="placeholder2">
+            <i class='bx bx-plus-circle placeholder-icon'></i>
+        </div>
+        <div class="placeholder-card" id="placeholder3">
+            <i class='bx bx-plus-circle placeholder-icon'></i>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно выбора виджетов -->
+<div class="widget-selector-modal" id="widgetSelectorModal">
+    <div class="widget-selector-content">
+        <div class="widget-selector-header">
+            <h2 class="widget-selector-title">Выберите виджет</h2>
+            <button class="widget-selector-close" id="closeWidgetSelector">&times;</button>
+        </div>
+        <div class="widget-grid" id="widgetGrid">
+            <!-- Виджеты будут добавлены через JavaScript -->
+        </div>
+        <div class="widget-selector-footer">
+            <button class="dashboard-btn" id="cancelWidgetSelection">Отмена</button>
+            <button class="dashboard-btn primary" id="addSelectedWidget">Добавить</button>
+        </div>
     </div>
 </div>
 
 <script>
-    let lastUserId = null;  // Переменная для хранения ID последнего пользователя
-    let lastDeviceId = null;
+    // Оборачиваем весь код в обработчик события DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            // Инициализация переменных
+            let lastUserId = null;
+            let editMode = false;
+            let currentPlaceholder = null;
+            let selectedWidgetType = null;
 
-    function fetchDashboardData() {
-        fetch("{% url 'get_dashboard_data' %}")
-            .then(response => response.json())
-            .then(data => {
-                // Проверяем, изменился ли последний пользователь
-                if (data.last_user.id_user !== lastUserId) {
-                    lastUserId = data.last_user.id_user;
-                    document.getElementById("last_user_name").textContent = data.last_user.user_name;
-                    document.getElementById("last_user_occupations").textContent = data.last_user.occupations;
+            // Доступные виджеты
+            const availableWidgets = [
+                {
+                    type: 'lastUser',
+                    name: 'Последний пользователь',
+                    icon: 'bxs-user',
+                    description: 'Информация о последнем зарегистрированном пользователе'
+                },
+                {
+                    type: 'activeDevices',
+                    name: 'Активные устройства',
+                    icon: 'bxs-devices',
+                    description: 'Список активных устройств в системе'
+                },
+                {
+                    type: 'logs',
+                    name: 'Последние логи',
+                    icon: 'bx-list-ul',
+                    description: 'Последние события в системе'
+                },
+                {
+                    type: 'stats',
+                    name: 'Статистика',
+                    icon: 'bxs-bar-chart-alt-2',
+                    description: 'Общая статистика системы'
+                },
+                {
+                    type: 'weather',
+                    name: 'Погода',
+                    icon: 'bxs-cloud',
+                    description: 'Текущая погода и прогноз'
+                },
+                {
+                    type: 'calendar',
+                    name: 'Календарь',
+                    icon: 'bxs-calendar',
+                    description: 'Календарь событий и мероприятий'
+                },
+                {
+                    type: 'tasks',
+                    name: 'Задачи',
+                    icon: 'bxs-check-square',
+                    description: 'Список задач и дел'
+                },
+                {
+                    type: 'notes',
+                    name: 'Заметки',
+                    icon: 'bxs-note',
+                    description: 'Быстрые заметки и напоминания'
+                },
+                {
+                    type: 'chart',
+                    name: 'График',
+                    icon: 'bxs-chart',
+                    description: 'Визуализация данных в виде графика'
                 }
-                // Обновляем логи
-                let logsList = document.getElementById("logs-list");
-                logsList.innerHTML = "";
+            ];
 
-                data.logs.forEach(log => {
-                    let listItem = document.createElement("li");
-                    listItem.className = "list-group-item";
-                    listItem.innerHTML = `<strong>[${log.datetime}]</strong> ${log.message} (${log.auditory_number})`;
-                    logsList.appendChild(listItem);
-                });
-            })
-            .catch(error => console.error("Ошибка загрузки данных:", error));
+            // Функция для обработки состояния бокового меню
+            function setupSidebarListener() {
+                // Находим боковое меню
+                const sidebar = document.querySelector('.sidebar');
 
-        fetch("{% url 'get_dashboard_data' %}")
-            .then(response => response.json())
-            .then(data => {
+                // Если меню не существует, просто выходим из функции
+                if (!sidebar) {
+                    console.log("Боковое меню не найдено");
+                    return;
+                }
 
-                if (data.last_device && data.last_device.id_device) {
+                // Функция для проверки состояния меню
+                function checkSidebarState() {
+                    // Проверяем, имеет ли меню класс active
+                    const isActive = sidebar.classList.contains('active');
 
-                    let deviceCard = document.getElementById("deviceCard");
-                    if (deviceCard) {
-                        document.getElementById("last_device_name").textContent = data.last_device.device_name;
-                        let activatedText = data.last_device.activated ?
-                            '<span class="badge bg-success">Активно</span>' :
-                            '<span class="badge bg-danger">Отключено</span>';
-
-                        document.getElementById("last_device_activated").innerHTML = activatedText;
+                    // Добавляем или удаляем класс sidebar-active у body
+                    if (isActive) {
+                        document.body.classList.add('sidebar-active');
                     } else {
-                        console.warn("Элемент #deviceCard не найден в DOM");
+                        document.body.classList.remove('sidebar-active');
                     }
                 }
-            })
-            .catch(error => console.error("Ошибка загрузки данных:", error));
-    }
 
-    // Запрашиваем данные каждые 5 секунд
-    setInterval(fetchDashboardData, 5000);
-    fetchDashboardData();
+                try {
+                    // Используем MutationObserver для отслеживания изменений в классах меню
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.attributeName === 'class') {
+                                checkSidebarState();
+                            }
+                        });
+                    });
 
-    let editMode = false;
+                    // Настраиваем наблюдатель для отслеживания изменений атрибутов
+                    observer.observe(sidebar, { attributes: true });
 
-    function loadLayout() {
-        let savedLayout = localStorage.getItem("gridLayout");
-        if (savedLayout) {
-            document.getElementById("grid").innerHTML = savedLayout;
+                    // Проверяем начальное состояние
+                    checkSidebarState();
+                } catch (error) {
+                    console.error("Ошибка при настройке наблюдателя:", error);
+                }
 
-            // Проверяем, есть ли все ключевые контейнеры
-            let requiredElements = ["lastUserCard", "deviceCard", "logsCard"];
-            let missingElements = requiredElements.filter(id => !document.getElementById(id));
-
-            if (missingElements.length > 0) {
-                console.warn("Некоторые контейнеры отсутствуют, сбрасываем макет:", missingElements);
-                localStorage.removeItem("gridLayout"); // Удаляем сохраненный макет
-                location.reload(); // Перезагружаем страницу, чтобы вернуть стандартное расположение
+                // Также можно добавить обработчик для кнопки меню, если она есть
+                const menuToggle = document.querySelector('.menu-toggle');
+                if (menuToggle) {
+                    menuToggle.addEventListener('click', function() {
+                        // Переключаем класс active для бокового меню
+                        sidebar.classList.toggle('active');
+                    });
+                }
             }
-        }
-    }
 
-    function saveLayout() {
-        localStorage.setItem("gridLayout", document.getElementById("grid").innerHTML);
-    }
+            function fetchDashboardData() {
+                fetch("{% url 'get_dashboard_data' %}")
+                    .then(response => response.json())
+                    .then(data => {
+                        // Обновляем данные о последнем пользователе
+                        if (data.last_user && data.last_user.id_user !== lastUserId) {
+                            lastUserId = data.last_user.id_user;
 
-    function enableEditing() {
-        editMode = true;
-        new Sortable(document.getElementById("grid"), {
-            animation: 150,
-            ghostClass: "sortable-ghost",
-            filter: ".placeholder",
-            preventOnFilter: false
-        });
-        document.getElementById("saveLayout").style.visibility = "visible";
-    }
+                            // Проверяем существование элементов перед обновлением
+                            const lastUserNameElement = document.getElementById("last_user_name");
+                            const lastUserOccupationsElement = document.getElementById("last_user_occupations");
+                            const lastUserIdElement = document.getElementById("last_user_id");
+                            const userDetailsLink = document.getElementById("user-details-link");
+                            const userAvatar = document.getElementById("user-avatar");
+                            const lastUserDateElement = document.getElementById("last_user_date");
 
-    function disableEditing() {
-        editMode = false;
-        document.getElementById("saveLayout").style.visibility = "hidden";
-    }
+                            // Обновляем информацию о пользователе только если элементы существуют
+                            if (lastUserNameElement) {
+                                lastUserNameElement.textContent = data.last_user.user_name || "Нет данных";
+                            }
 
-    document.getElementById("editModeToggle").addEventListener("click", function () {
-        if (!editMode) {
-            enableEditing();
-            this.innerHTML = "<i class='bx bx-check'></i>";  // Изменяем иконку на галочку
-            this.classList.add("btn-danger");
-        } else {
-            disableEditing();
-            this.innerHTML = "<i class='bx bxs-edit-alt'></i>";  // Возвращаем иконку редактирования
-            this.classList.remove("btn-danger");
+                            if (lastUserOccupationsElement) {
+                                lastUserOccupationsElement.textContent = data.last_user.occupations || "Нет данных";
+                            }
+
+                            if (lastUserIdElement) {
+                                lastUserIdElement.textContent = data.last_user.id_user || "-";
+                            }
+
+                            if (userDetailsLink) {
+                                userDetailsLink.href = `/users/${data.last_user.id_user}/`;
+                            }
+
+                            // Устанавливаем аватар
+                            if (userAvatar && data.last_user.user_name) {
+                                const firstLetter = data.last_user.user_name.charAt(0).toUpperCase();
+                                userAvatar.textContent = firstLetter;
+                                userAvatar.style.backgroundColor = stringToColor(data.last_user.user_name);
+                            } else if (userAvatar) {
+                                userAvatar.textContent = "?";
+                            }
+
+                            // Устанавливаем дату (если она есть в данных)
+                            if (lastUserDateElement) {
+                                if (data.last_user.created_at) {
+                                    lastUserDateElement.textContent = formatDate(data.last_user.created_at);
+                                } else {
+                                    lastUserDateElement.textContent = "Нет данных";
+                                }
+                            }
+                        }
+
+                        // Обновляем данные об активных устройствах
+                        if (data.devices) {
+                            const activeDevices = data.devices.filter(device => device.device_status === 'normal');
+                            const activeDevicesCount = document.getElementById("active-devices-count");
+                            const activeDevicesList = document.getElementById("active-devices-list");
+                            const totalDevicesCount = document.getElementById("total-devices-count");
+
+                            if (activeDevicesCount) {
+                                activeDevicesCount.textContent = activeDevices.length;
+                            }
+
+                            if (totalDevicesCount) {
+                                totalDevicesCount.textContent = data.devices.length;
+                            }
+
+                            if (activeDevicesList) {
+                                activeDevicesList.innerHTML = "";
+
+                                if (activeDevices.length === 0) {
+                                    const listItem = document.createElement("li");
+                                    listItem.className = "device-item";
+                                    listItem.innerHTML = `<span class="device-name">Нет активных устройств</span>`;
+                                    activeDevicesList.appendChild(listItem);
+                                } else {
+                                    // Отображаем только первые 5 устройств
+                                    const devicesToShow = activeDevices.slice(0, 5);
+
+                                    devicesToShow.forEach(device => {
+                                        const listItem = document.createElement("li");
+                                        listItem.className = "device-item";
+                                        listItem.innerHTML = `
+                                            <span class="device-name">${device.device_name || 'Без имени'}</span>
+                                            <span class="device-status active">
+                                                <i class='bx bxs-circle'></i>
+                                            </span>
+                                        `;
+                                        activeDevicesList.appendChild(listItem);
+                                    });
+
+                                    // Если есть еще устройства, показываем сообщение
+                                    if (activeDevices.length > 5) {
+                                        const moreItem = document.createElement("li");
+                                        moreItem.className = "device-item";
+                                        moreItem.innerHTML = `<span class="device-name">И еще ${activeDevices.length - 5}...</span>`;
+                                        activeDevicesList.appendChild(moreItem);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Обновляем логи
+                        if (data.logs && data.logs.length > 0) {
+                            const logsList = document.getElementById("logs-list");
+                            const logsCount = document.getElementById("logs-count");
+
+                            if (logsList) {
+                                logsList.innerHTML = "";
+
+                                data.logs.forEach(log => {
+                                    const listItem = document.createElement("li");
+                                    listItem.className = "log-item";
+
+                                    listItem.innerHTML = `
+                                        <span class="log-time">[${formatTime(log.datetime)}]</span>
+                                        <span class="log-message">${log.message}</span>
+                                        <span class="log-location">Аудитория: ${log.auditory_number}</span>
+                                    `;
+
+                                    logsList.appendChild(listItem);
+                                });
+                            }
+
+                            // Обновляем счетчик логов
+                            if (logsCount) {
+                                logsCount.textContent = data.logs.length;
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Ошибка загрузки данных:", error);
+                        // Проверяем, существует ли функция showDashboardNotification
+                        if (typeof showDashboardNotification === 'function') {
+                            showDashboardNotification("Ошибка загрузки данных", "error", "Ошибка");
+                        }
+                    });
+            }
+
+            // Функция для форматирования даты
+            function formatDate(dateString) {
+                if (!dateString) return "Нет данных";
+
+                try {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('ru-RU', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (error) {
+                    console.error("Ошибка форматирования даты:", error);
+                    return dateString;
+                }
+            }
+
+            // Функция для форматирования времени
+            function formatTime(timeString) {
+                if (!timeString) return "Нет данных";
+
+                try {
+                    // Если это полная дата, форматируем ее
+                    if (timeString.includes('-') || timeString.includes('/')) {
+                        return formatDate(timeString);
+                    }
+
+                    // Иначе возвращаем как есть
+                    return timeString;
+                } catch (error) {
+                    console.error("Ошибка форматирования времени:", error);
+                    return timeString;
+                }
+            }
+
+            // Функция для генерации цвета на основе строки
+            function stringToColor(str) {
+                if (!str) return "#4a6cf7";
+
+                try {
+                    let hash = 0;
+                    for (let i = 0; i < str.length; i++) {
+                        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+
+                    const colors = [
+                        "#4a6cf7", "#19b159", "#f7b84a", "#e83e8c",
+                        "#6f42c1", "#20c997", "#17a2b8", "#fd7e14"
+                    ];
+
+                    return colors[Math.abs(hash) % colors.length];
+                } catch (error) {
+                    console.error("Ошибка генерации цвета:", error);
+                    return "#4a6cf7";
+                }
+            }
+
+            function loadLayout() {
+                try {
+                    const gridElement = document.getElementById("grid");
+                    if (!gridElement) {
+                        console.warn("Элемент grid не найден");
+                        return;
+                    }
+
+                    let savedLayout = localStorage.getItem("gridLayout");
+                    if (savedLayout) {
+                        gridElement.innerHTML = savedLayout;
+
+                        // Проверяем, есть ли все ключевые контейнеры
+                        let requiredElements = ["lastUserCard", "activeDevicesCard", "logsCard"];
+                        let missingElements = requiredElements.filter(id => !document.getElementById(id));
+
+                        if (missingElements.length > 0) {
+                            console.warn("Некоторые контейнеры отсутствуют, сбрасываем макет:", missingElements);
+                            localStorage.removeItem("gridLayout"); // Удаляем сохраненный макет
+                            location.reload(); // Перезагружаем страницу, чтобы вернуть стандартное расположение
+                        }
+
+                        // Добавляем обработчики для кнопок удаления
+                        setupRemoveButtons();
+                    }
+                } catch (error) {
+                    console.error("Ошибка загрузки макета:", error);
+                }
+            }
+
+            function saveLayout() {
+                try {
+                    const gridElement = document.getElementById("grid");
+                    if (gridElement) {
+                        localStorage.setItem("gridLayout", gridElement.innerHTML);
+                    }
+                } catch (error) {
+                    console.error("Ошибка сохранения макета:", error);
+                }
+            }
+
+            function enableEditing() {
+                try {
+                    editMode = true;
+                    document.body.classList.add("edit-mode");
+
+                    const gridElement = document.getElementById("grid");
+                    if (gridElement) {
+                        new Sortable(gridElement, {
+                            animation: 150,
+                            ghostClass: "sortable-ghost",
+                            filter: ".placeholder-card",
+                            preventOnFilter: false
+                        });
+                    }
+
+                    const saveLayoutBtn = document.getElementById("saveLayout");
+                    if (saveLayoutBtn) {
+                        saveLayoutBtn.style.display = "flex";
+                    }
+
+                    const editModeToggle = document.getElementById("editModeToggle");
+                    if (editModeToggle) {
+                        editModeToggle.innerHTML = '<i class="bx bx-x"></i> Отмена';
+                        editModeToggle.classList.add("danger");
+                    }
+
+                    // Добавляем обработчики для плейсхолдеров
+                    setupPlaceholders();
+
+                    // Добавляем обработчики для кнопок удаления
+                    setupRemoveButtons();
+                } catch (error) {
+                    console.error("Ошибка включения режима редактирования:", error);
+                }
+            }
+
+            function disableEditing() {
+                try {
+                    editMode = false;
+                    document.body.classList.remove("edit-mode");
+
+                    const saveLayoutBtn = document.getElementById("saveLayout");
+                    if (saveLayoutBtn) {
+                        saveLayoutBtn.style.display = "none";
+                    }
+
+                    const editModeToggle = document.getElementById("editModeToggle");
+                    if (editModeToggle) {
+                        editModeToggle.innerHTML = '<i class="bx bxs-edit-alt"></i> Редактировать';
+                        editModeToggle.classList.remove("danger");
+                    }
+                } catch (error) {
+                    console.error("Ошибка отключения режима редактирования:", error);
+                }
+            }
+
+            // Функция для настройки обработчиков плейсхолдеров
+            function setupPlaceholders() {
+                const placeholders = document.querySelectorAll('.placeholder-card');
+
+                placeholders.forEach(placeholder => {
+                    placeholder.addEventListener('click', function() {
+                        if (!editMode) return;
+
+                        currentPlaceholder = this;
+                        openWidgetSelector();
+                    });
+                });
+            }
+
+            // Функция для настройки обработчиков кнопок удаления
+            function setupRemoveButtons() {
+                const removeButtons = document.querySelectorAll('.card-remove-btn');
+
+                removeButtons.forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        if (!editMode) return;
+
+                        const card = this.closest('.dashboard-card');
+                        if (card) {
+                            card.remove();
+                            showDashboardNotification("Виджет удален", "success", "Успешно");
+                        }
+                    });
+                });
+            }
+
+            // Функция для открытия селектора виджетов
+            function openWidgetSelector() {
+                const modal = document.getElementById('widgetSelectorModal');
+                const widgetGrid = document.getElementById('widgetGrid');
+
+                if (modal && widgetGrid) {
+                    // Очищаем сетку виджетов
+                    widgetGrid.innerHTML = '';
+
+                    // Заполняем сетку доступными виджетами
+                    availableWidgets.forEach(widget => {
+                        const widgetItem = document.createElement('div');
+                        widgetItem.className = 'widget-item';
+                        widgetItem.dataset.type = widget.type;
+
+                        widgetItem.innerHTML = `
+                            <div class="widget-icon">
+                                <i class='bx ${widget.icon}'></i>
+                            </div>
+                            <div class="widget-name">${widget.name}</div>
+                            <div class="widget-description">${widget.description}</div>
+                        `;
+
+                        widgetItem.addEventListener('click', function() {
+                            // Снимаем выделение со всех виджетов
+                            document.querySelectorAll('.widget-item').forEach(item => {
+                                item.classList.remove('selected');
+                            });
+
+                            // Выделяем выбранный виджет
+                            this.classList.add('selected');
+                            selectedWidgetType = this.dataset.type;
+                        });
+
+                        widgetGrid.appendChild(widgetItem);
+                    });
+
+                    // Показываем модальное окно
+                    modal.classList.add('show');
+                }
+            }
+
+            // Функция для закрытия селектора виджетов
+            function closeWidgetSelector() {
+                const modal = document.getElementById('widgetSelectorModal');
+
+                if (modal) {
+                    modal.classList.remove('show');
+                    selectedWidgetType = null;
+                }
+            }
+
+            // Функция для добавления выбранного виджета
+            function addSelectedWidget() {
+                if (!selectedWidgetType || !currentPlaceholder) {
+                    closeWidgetSelector();
+                    return;
+                }
+
+                // Находим шаблон виджета
+                const widgetTemplate = availableWidgets.find(widget => widget.type === selectedWidgetType);
+
+                if (!widgetTemplate) {
+                    closeWidgetSelector();
+                    return;
+                }
+
+                // Создаем новый виджет
+                const newWidget = createWidget(widgetTemplate);
+
+                // Заменяем плейсхолдер на новый виджет
+                if (currentPlaceholder.parentNode) {
+                    currentPlaceholder.parentNode.replaceChild(newWidget, currentPlaceholder);
+                }
+
+                // Добавляем обработчик для кнопки удаления
+                const removeButton = newWidget.querySelector('.card-remove-btn');
+                if (removeButton) {
+                    removeButton.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        if (!editMode) return;
+
+                        const card = this.closest('.dashboard-card');
+                        if (card) {
+                            // Создаем новый плейсхолдер
+                            const newPlaceholder = document.createElement('div');
+                            newPlaceholder.className = 'placeholder-card';
+                            newPlaceholder.innerHTML = '<i class="bx bx-plus-circle placeholder-icon"></i>';
+
+                            // Добавляем обработчик для нового плейсхолдера
+                            newPlaceholder.addEventListener('click', function() {
+                                if (!editMode) return;
+
+                                currentPlaceholder = this;
+                                openWidgetSelector();
+                            });
+
+                            // Заменяем карточку на плейсхолдер
+                            card.parentNode.replaceChild(newPlaceholder, card);
+
+                            showDashboardNotification("Виджет удален", "success", "Успешно");
+                        }
+                    });
+                }
+
+                // Закрываем селектор виджетов
+                closeWidgetSelector();
+
+                // Показываем уведомление
+                showDashboardNotification("Виджет добавлен", "success", "Успешно");
+
+                // Обновляем данные дашборда
+                fetchDashboardData();
+            }
+
+            // Функция для создания виджета по шаблону
+            function createWidget(template) {
+                const widget = document.createElement('div');
+                widget.className = 'dashboard-card';
+                widget.id = `${template.type}Card-${Date.now()}`;
+                widget.dataset.widgetType = template.type;
+
+                switch (template.type) {
+                    case 'lastUser':
+                        widget.innerHTML = `
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class='bx ${template.icon}'></i>
+                                    ${template.name}
+                                </h3>
+                                <span class="card-badge">
+                                    <i class='bx bxs-time'></i>
+                                    <button class="card-remove-btn">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="user-info">
+                                    <div class="user-avatar">?</div>
+                                    <div class="user-details">
+                                        <div class="user-name">Загрузка...</div>
+                                        <div class="user-position">Загрузка...</div>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-label">Статус:</div>
+                                    <div class="info-value">
+                                        <span class="device-status active">
+                                            <i class='bx bxs-circle'></i>
+                                            Активен
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-label">Дата регистрации:</div>
+                                    <div class="info-value">Загрузка...</div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span>ID: <span>-</span></span>
+                                <a href="#" class="view-details">Подробнее <i class='bx bx-right-arrow-alt'></i></a>
+                            </div>
+                        `;
+                        break;
+                    case 'activeDevices':
+                        widget.innerHTML = `
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class='bx ${template.icon}'></i>
+                                    ${template.name}
+                                </h3>
+                                <span class="card-badge">
+                                    <i class='bx bxs-time'></i>
+                                    <button class="card-remove-btn">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="active-devices-count">0</div>
+                                <ul class="devices-list">
+                                    <li class="device-item">
+                                        <span class="device-name">Загрузка устройств...</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-footer">
+                                <span>Всего: <span>0</span></span>
+                                <a href="#" class="view-details">Все устройства <i class='bx bx-right-arrow-alt'></i></a>
+                            </div>
+                        `;
+                        break;
+                    case 'logs':
+                        widget.innerHTML = `
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class='bx ${template.icon}'></i>
+                                    ${template.name}
+                                </h3>
+                                <span class="card-badge">
+                                    <i class='bx bxs-time'></i>
+                                    <button class="card-remove-btn">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <ul class="logs-list">
+                                    <li class="log-item">
+                                        <span class="log-time">Загрузка логов...</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-footer">
+                                <span>Всего: <span>0</span></span>
+                                <a href="#" class="view-details">Все логи <i class='bx bx-right-arrow-alt'></i></a>
+                            </div>
+                        `;
+                        break;
+                    case 'stats':
+                        widget.innerHTML = `
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class='bx ${template.icon}'></i>
+                                    ${template.name}
+                                </h3>
+                                <span class="card-badge">
+                                    <i class='bx bxs-time'></i>
+                                    <button class="card-remove-btn">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="stat-item">
+                                    <div class="stat-icon blue">
+                                        <i class='bx bxs-user'></i>
+                                    </div>
+                                    <div class="stat-details">
+                                        <div class="stat-value">0</div>
+                                        <div class="stat-label">Пользователей</div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon green">
+                                        <i class='bx bxs-devices'></i>
+                                    </div>
+                                    <div class="stat-details">
+                                        <div class="stat-value">0</div>
+                                        <div class="stat-label">Устройств</div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon orange">
+                                        <i class='bx bxs-bell'></i>
+                                    </div>
+                                    <div class="stat-details">
+                                        <div class="stat-value">0</div>
+                                        <div class="stat-label">Уведомлений</div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon red">
+                                        <i class='bx bxs-error'></i>
+                                    </div>
+                                    <div class="stat-details">
+                                        <div class="stat-value">0</div>
+                                        <div class="stat-label">Ошибок</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span>Обновлено: <span>Сейчас</span></span>
+                                <a href="#" class="view-details">Подробнее <i class='bx bx-right-arrow-alt'></i></a>
+                            </div>
+                        `;
+                        break;
+                    case 'weather':
+                        widget.innerHTML = `
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class='bx ${template.icon}'></i>
+                                    ${template.name}
+                                </h3>
+                                <span class="card-badge">
+                                    <i class='bx bxs-time'></i>
+                                    <button class="card-remove-btn">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="weather-icon">
+                                    <i class='bx bxs-sun'></i>
+                                </div>
+                                <div class="weather-temp">--°C</div>
+                                <div class="weather-desc">Загрузка данных...</div>
+                                <div class="weather-details">
+                                    <div class="weather-detail">
+                                        <div class="weather-detail-icon">
+                                            <i class='bx bxs-droplet'></i>
+                                        </div>
+                                        <div class="weather-detail-value">--%</div>
+                                        <div class="weather-detail-label">Влажность</div>
+                                    </div>
+                                    <div class="weather-detail">
+                                        <div class="weather-detail-icon">
+                                            <i class='bx bxs-wind'></i>
+                                        </div>
+                                        <div class="weather-detail-value">-- м/с</div>
+                                        <div class="weather-detail-label">Ветер</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span>Обновлено: <span>Сейчас</span></span>
+                                <a href="#" class="view-details">Прогноз <i class='bx bx-right-arrow-alt'></i></a>
+                            </div>
+                        `;
+                        break;
+                    case 'calendar':
+                        widget.innerHTML = `
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class='bx ${template.icon}'></i>
+                                    ${template.name}
+                                </h3>
+                                <span class="card-badge">
+                                    <i class='bx bxs-time'></i>
+                                    <button class="card-remove-btn">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="calendar-header">
+                                    <div class="calendar-title">Апрель 2023</div>
+                                    <div class="calendar-nav">
+                                        <button class="calendar-nav-btn">
+                                            <i class='bx bx-chevron-left'></i>
+                                        </button>
+                                        <button class="calendar-nav-btn">
+                                            <i class='bx bx-chevron-right'></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="calendar-grid">
+                                    <div class="calendar-day-name">Пн</div>
+                                    <div class="calendar-day-name">Вт</div>
+                                    <div class="calendar-day-name">Ср</div>
+                                    <div class="calendar-day-name">Чт</div>
+                                    <div class="calendar-day-name">Пт</div>
+                                    <div class="calendar-day-name">Сб</div>
+                                    <div class="calendar-day-name">Вс</div>
+
+                                    <div class="calendar-day other-month">27</div>
+                                    <div class="calendar-day other-month">28</div>
+                                    <div class="calendar-day other-month">29</div>
+                                    <div class="calendar-day other-month">30</div>
+                                    <div class="calendar-day other-month">31</div>
+                                    <div class="calendar-day">1</div>
+                                    <div class="calendar-day">2</div>
+
+                                    <div class="calendar-day">3</div>
+                                    <div class="calendar-day">4</div>
+                                    <div class="calendar-day">5</div>
+                                    <div class="calendar-day">6</div>
+                                    <div class="calendar-day">7</div>
+                                    <div class="calendar-day">8</div>
+                                    <div class="calendar-day">9</div>
+
+                                    <div class="calendar-day">10</div>
+                                    <div class="calendar-day">11</div>
+                                    <div class="calendar-day">12</div>
+                                    <div class="calendar-day">13</div>
+                                    <div class="calendar-day">14</div>
+                                    <div class="calendar-day">15</div>
+                                    <div class="calendar-day">16</div>
+
+                                    <div class="calendar-day">17</div>
+                                    <div class="calendar-day">18</div>
+                                    <div class="calendar-day">19</div>
+                                    <div class="calendar-day today">20</div>
+                                    <div class="calendar-day has-event">21</div>
+                                    <div class="calendar-day">22</div>
+                                    <div class="calendar-day">23</div>
+
+                                    <div class="calendar-day">24</div>
+                                    <div class="calendar-day">25</div>
+                                    <div class="calendar-day">26</div>
+                                    <div class="calendar-day">27</div>
+                                    <div class="calendar-day">28</div>
+                                    <div class="calendar-day">29</div>
+                                    <div class="calendar-day">30</div>
+
+                                    <div class="calendar-day other-month">1</div>
+                                    <div class="calendar-day other-month">2</div>
+                                    <div class="calendar-day other-month">3</div>
+                                    <div class="calendar-day other-month">4</div>
+                                    <div class="calendar-day other-month">5</div>
+                                    <div class="calendar-day other-month">6</div>
+                                    <div class="calendar-day other-month">7</div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span>Сегодня: <span>20 апреля</span></span>
+                                <a href="#" class="view-details">Все события <i class='bx bx-right-arrow-alt'></i></a>
+                            </div>
+                        `;
+                        break;
+                    case 'tasks':
+                        widget.innerHTML = `
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class='bx ${template.icon}'></i>
+                                    ${template.name}
+                                </h3>
+                                <span class="card-badge">
+                                    <i class='bx bxs-time'></i>
+                                    <button class="card-remove-btn">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <ul class="tasks-list">
+                                    <li class="task-item">
+                                        <div class="task-checkbox">
+                                            <input type="checkbox" id="task1">
+                                            <label for="task1"></label>
+                                        </div>
+                                        <div class="task-content">
+                                            <div class="task-title">Проверить новые устройства</div>
+                                            <div class="task-meta">
+                                                <span class="task-due">Сегодня</span>
+                                                <span class="task-priority high">Высокий</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li class="task-item">
+                                        <div class="task-checkbox">
+                                            <input type="checkbox" id="task2">
+                                            <label for="task2"></label>
+                                        </div>
+                                        <div class="task-content">
+                                            <div class="task-title">Обновить прошивку</div>
+                                            <div class="task-meta">
+                                                <span class="task-due">Завтра</span>
+                                                <span class="task-priority medium">Средний</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li class="task-item">
+                                        <div class="task-checkbox">
+                                            <input type="checkbox" id="task3">
+                                            <label for="task3"></label>
+                                        </div>
+                                        <div class="task-content">
+                                            <div class="task-title">Создать отчет</div>
+                                            <div class="task-meta">
+                                                <span class="task-due">23 апреля</span>
+                                                <span class="task-priority low">Низкий</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-footer">
+                                <span>Всего: <span>3</span></span>
+                                <a href="#" class="view-details">Все задачи <i class='bx bx-right-arrow-alt'></i></a>
+                            </div>
+                        `;
+                        break;
+                    case 'notes':
+                        widget.innerHTML = `
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class='bx ${template.icon}'></i>
+                                    ${template.name}
+                                </h3>
+                                <span class="card-badge">
+                                    <i class='bx bxs-time'></i>
+                                    <button class="card-remove-btn">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="notes-toolbar">
+                                    <button class="notes-toolbar-btn">
+                                        <i class='bx bx-bold'></i>
+                                    </button>
+                                    <button class="notes-toolbar-btn">
+                                        <i class='bx bx-italic'></i>
+                                    </button>
+                                    <button class="notes-toolbar-btn">
+                                        <i class='bx bx-underline'></i>
+                                    </button>
+                                    <button class="notes-toolbar-btn">
+                                        <i class='bx bx-list-ul'></i>
+                                    </button>
+                                </div>
+                                <div class="notes-content" contenteditable="true">
+                                    Добавьте заметку здесь...
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span>Изменено: <span>Только что</span></span>
+                                <a href="#" class="view-details">Все заметки <i class='bx bx-right-arrow-alt'></i></a>
+                            </div>
+                        `;
+                        break;
+                    case 'chart':
+                        widget.innerHTML = `
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class='bx ${template.icon}'></i>
+                                    ${template.name}
+                                </h3>
+                                <span class="card-badge">
+                                    <i class='bx bxs-time'></i>
+                                    <button class="card-remove-btn">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="chart-${Date.now()}"></canvas>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span>Данные за: <span>Последние 7 дней</span></span>
+                                <a href="#" class="view-details">Подробнее <i class='bx bx-right-arrow-alt'></i></a>
+                            </div>
+                        `;
+                        break;
+                    default:
+                        widget.innerHTML = `
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class='bx ${template.icon}'></i>
+                                    ${template.name}
+                                </h3>
+                                <span class="card-badge">
+                                    <i class='bx bxs-time'></i>
+                                    <button class="card-remove-btn">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div style="text-align: center; padding: 2rem 0;">
+                                    <i class='bx ${template.icon}' style="font-size: 3rem; color: #4a6cf7; margin-bottom: 1rem;"></i>
+                                    <p>Содержимое виджета будет здесь</p>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span>Статус: <span>Новый</span></span>
+                                <a href="#" class="view-details">Подробнее <i class='bx bx-right-arrow-alt'></i></a>
+                            </div>
+                        `;
+                }
+
+                return widget;
+            }
+
+            // Функция для создания и показа уведомления
+            function showDashboardNotification(message, type = 'success', title = '', duration = 3000) {
+                try {
+                    // Создаем уникальный контейнер для уведомлений дашборда, если он не существует
+                    let container = document.getElementById('dashboard-notifications');
+
+                    if (!container) {
+                        container = document.createElement('div');
+                        container.id = 'dashboard-notifications';
+                        container.style.position = 'fixed';
+                        container.style.bottom = '20px';
+                        container.style.right = '20px';
+                        container.style.zIndex = '9999';
+                        document.body.appendChild(container);
+                    }
+
+                    // Создаем уведомление
+                    const notification = document.createElement('div');
+                    notification.className = `dashboard-notification notification-${type}`;
+
+                    // Определяем иконку в зависимости от типа
+                    let icon = '';
+                    switch(type) {
+                        case 'success':
+                            icon = '<i class="bx bx-check-circle"></i>';
+                            break;
+                        case 'error':
+                            icon = '<i class="bx bx-x-circle"></i>';
+                            break;
+                        case 'warning':
+                            icon = '<i class="bx bx-error"></i>';
+                            break;
+                        case 'info':
+                        default:
+                            icon = '<i class="bx bx-info-circle"></i>';
+                            break;
+                    }
+
+                    // Создаем содержимое уведомления
+                    notification.innerHTML = `
+                        <div class="notification-icon">${icon}</div>
+                        <div class="notification-content">
+                            ${title ? `<div class="notification-title">${title}</div>` : ''}
+                            <div class="notification-message">${message}</div>
+                        </div>
+                        <div class="notification-close">&times;</div>
+                        <div class="notification-progress"></div>
+                    `;
+
+                    // Добавляем в контейнер
+                    container.appendChild(notification);
+
+                    // Добавляем обработчик для кнопки закрытия
+                    const closeButton = notification.querySelector('.notification-close');
+                    if (closeButton) {
+                        closeButton.addEventListener('click', () => {
+                            hideNotification(notification);
+                        });
+                    }
+
+                    // Показываем уведомление с анимацией
+                    setTimeout(() => {
+                        notification.classList.add('show');
+
+                        // Анимируем прогресс-бар
+                        const progressBar = notification.querySelector('.notification-progress');
+                        if (progressBar && duration > 0) {
+                            progressBar.style.transition = `width ${duration}ms linear`;
+                            progressBar.style.width = '0';
+                        }
+                    }, 10);
+
+                    // Автоматически скрываем через указанное время
+                    if (duration > 0) {
+                        setTimeout(() => {
+                            hideNotification(notification);
+                        }, duration);
+                    }
+
+                    // Закрываем по клику
+                    notification.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('notification-close')) {
+                            hideNotification(notification);
+                        }
+                    });
+
+                    return notification;
+                } catch (error) {
+                    console.error("Ошибка создания уведомления:", error);
+                }
+            }
+
+            function hideNotification(notification) {
+                try {
+                    if (!notification) return;
+
+                    notification.classList.remove('show');
+
+                    // Удаляем элемент после завершения анимации
+                    setTimeout(() => {
+                        if (notification && notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 400);
+                } catch (error) {
+                    console.error("Ошибка скрытия уведомления:", error);
+                }
+            }
+
+            // Настраиваем обработчики событий
+            const editModeToggle = document.getElementById("editModeToggle");
+            if (editModeToggle) {
+                editModeToggle.addEventListener("click", function() {
+                    if (!editMode) {
+                        enableEditing();
+                    } else {
+                        disableEditing();
+                    }
+                });
+            }
+
+            const saveLayoutBtn = document.getElementById("saveLayout");
+            if (saveLayoutBtn) {
+                saveLayoutBtn.addEventListener("click", function() {
+                    saveLayout();
+                    showDashboardNotification("Расположение блоков сохранено!", "success", "Успешно");
+                    disableEditing();
+                });
+            }
+
+            // Настраиваем обработчики для модального окна выбора виджетов
+            const addWidgetBtn = document.getElementById("addWidget");
+            if (addWidgetBtn) {
+                addWidgetBtn.addEventListener("click", function() {
+                    // Создаем временный плейсхолдер
+                    currentPlaceholder = document.createElement('div');
+                    currentPlaceholder.className = 'placeholder-card';
+
+                    // Добавляем его в сетку
+                    const gridElement = document.getElementById("grid");
+                    if (gridElement) {
+                        gridElement.appendChild(currentPlaceholder);
+                    }
+
+                    openWidgetSelector();
+                });
+            }
+
+            const closeWidgetSelectorBtn = document.getElementById("closeWidgetSelector");
+            if (closeWidgetSelectorBtn) {
+                closeWidgetSelectorBtn.addEventListener("click", function() {
+                    closeWidgetSelector();
+
+                    // Удаляем временный плейсхолдер, если он был создан
+                    if (currentPlaceholder && !currentPlaceholder.id) {
+                        currentPlaceholder.remove();
+                    }
+                });
+            }
+
+            const cancelWidgetSelectionBtn = document.getElementById("cancelWidgetSelection");
+            if (cancelWidgetSelectionBtn) {
+                cancelWidgetSelectionBtn.addEventListener("click", function() {
+                    closeWidgetSelector();
+
+                    // Удаляем временный плейсхолдер, если он был создан
+                    if (currentPlaceholder && !currentPlaceholder.id) {
+                        currentPlaceholder.remove();
+                    }
+                });
+            }
+
+            const addSelectedWidgetBtn = document.getElementById("addSelectedWidget");
+            if (addSelectedWidgetBtn) {
+                addSelectedWidgetBtn.addEventListener("click", function() {
+                    addSelectedWidget();
+                });
+            }
+
+            // Настраиваем слушатель для бокового меню
+            setupSidebarListener();
+
+            // Загружаем сохраненное расположение
+            loadLayout();
+
+            // Настраиваем обработчики для плейсхолдеров
+            setupPlaceholders();
+
+            // Запрашиваем данные каждые 5 секунд
+            fetchDashboardData();
+            const dataInterval = setInterval(fetchDashboardData, 5000);
+
+        } catch (error) {
+            console.error("Глобальная ошибка инициализации дашборда:", error);
         }
     });
-
-    document.getElementById("saveLayout").addEventListener("click", function () {
-        saveLayout();
-        showDashboardNotification("Расположение блоков сохранено!", "success", "Успешно");
-    });
-
-    // Загружаем сохраненное расположение
-    loadLayout();
-    document.getElementById("editModeToggle").addEventListener("click", function () {
-        document.body.classList.toggle("edit-mode");
-    });
-    // Функция для создания и показа уведомления
-    function showDashboardNotification(message, type = 'success', title = '', duration = 3000) {
-        // Создаем уникальный контейнер для уведомлений дашборда, если он не существует
-        let container = document.getElementById('dashboard-notifications');
-
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'dashboard-notifications';
-            container.style.position = 'fixed';
-            container.style.bottom = '20px';
-            container.style.right = '20px';
-            container.style.zIndex = '9999';
-            document.body.appendChild(container);
-        }
-
-        // Создаем уведомление
-        const notification = document.createElement('div');
-        notification.className = `dashboard dashboard-${type}`;
-
-        // Определяем иконку в зависимости от типа
-        let icon = '';
-        switch(type) {
-            case 'success':
-                icon = '<i class="bx bx-check-circle" style="color:#0dc8ee"></i>';
-                break;
-            case 'error':
-                icon = '<i class="bx bx-x-circle" style="color:#dc3545"></i>';
-                break;
-            case 'warning':
-                icon = '<i class="bx bx-error" style="color:#ffc107"></i>';
-                break;
-            case 'info':
-            default:
-                icon = '<i class="bx bx-info-circle" style="color:#0dc8ee"></i>';
-                break;
-        }
-
-        // Создаем содержимое уведомления
-        notification.innerHTML = `
-        <div class="dashboard-icon">${icon}</div>
-        <div class="dashboard-content">
-            ${title ? `<div class="dashboard-title">${title}</div>` : ''}
-            <div class="dashboard-message">${message}</div>
-        </div>
-        <div class="dashboard-close">&times;</div>
-        <div class="dashboard-progress"></div>
-    `;
-
-        // Добавляем стили непосредственно к элементу
-        notification.style.backgroundColor = '#212529';
-        notification.style.color = 'white';
-        notification.style.padding = '15px';
-        notification.style.marginBottom = '10px';
-        notification.style.borderRadius = '8px';
-        notification.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-        notification.style.display = 'flex';
-        notification.style.alignItems = 'center';
-        notification.style.width = 'auto';
-        notification.style.maxWidth = '350px';
-        notification.style.transform = 'translateX(100%)';
-        notification.style.opacity = '0';
-        notification.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease';
-        notification.style.borderLeft = '4px solid #4a6cf7';
-        notification.style.overflow = 'hidden';
-
-        // Добавляем в контейнер
-        container.appendChild(notification);
-
-        // Добавляем обработчик для кнопки закрытия
-        const closeButton = notification.querySelector('.dashboard-close');
-        closeButton.style.cursor = 'pointer';
-        closeButton.style.fontSize = '18px';
-        closeButton.style.marginLeft = '10px';
-        closeButton.style.opacity = '0.7';
-        closeButton.style.transition = 'opacity 0.2s';
-
-        closeButton.addEventListener('click', () => {
-            hideDashboardNotification(notification);
-        });
-
-        // Стили для иконки
-        const iconElement = notification.querySelector('.dashboard-icon');
-        iconElement.style.marginRight = '15px';
-        iconElement.style.fontSize = '20px';
-        iconElement.style.display = 'flex';
-        iconElement.style.alignItems = 'center';
-        iconElement.style.justifyContent = 'center';
-
-        // Стили для контента
-        const contentElement = notification.querySelector('.dashboard-content');
-        contentElement.style.flexGrow = '1';
-
-        // Стили для заголовка
-        if (title) {
-            const titleElement = notification.querySelector('.dashboard-title');
-            titleElement.style.fontWeight = 'bold';
-            titleElement.style.marginBottom = '5px';
-            titleElement.style.fontSize = '16px';
-        }
-
-        // Стили для сообщения
-        const messageElement = notification.querySelector('.dashboard-message');
-        messageElement.style.fontSize = '14px';
-        messageElement.style.opacity = '0.9';
-
-        // Стили для прогресс-бара
-        const progressBar = notification.querySelector('.dashboard-progress');
-        progressBar.style.position = 'absolute';
-        progressBar.style.bottom = '0';
-        progressBar.style.left = '0';
-        progressBar.style.height = '3px';
-        progressBar.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
-        progressBar.style.width = '100%';
-        progressBar.style.transformOrigin = 'left';
-
-        // Показываем уведомление с анимацией
-        setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
-            notification.style.opacity = '1';
-
-            // Анимируем прогресс-бар
-            if (progressBar && duration > 0) {
-                progressBar.style.transition = `width ${duration}ms linear`;
-                progressBar.style.width = '0';
-            }
-        }, 10);
-
-        // Автоматически скрываем через указанное время
-        if (duration > 0) {
-            setTimeout(() => {
-                hideDashboardNotification(notification);
-            }, duration);
-        }
-
-        // Закрываем по клику
-        notification.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('dashboard-close')) {
-                hideDashboardNotification(notification);
-            }
-        });
-
-        return notification;
-    }
-
-    function hideDashboardNotification(notification) {
-        notification.style.transform = 'translateX(100%)';
-        notification.style.opacity = '0';
-
-        // Удаляем элемент после завершения анимации
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 400);
-    }
 </script>
 {% endblock %}

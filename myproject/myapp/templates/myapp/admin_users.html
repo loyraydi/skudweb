@@ -94,6 +94,40 @@
     </div>
 </div>
 
+<div id="deleteConfirmOverlay" class="confirm-overlay" style="display: none;">
+    <div class="confirm-wrapper">
+        <div class="confirm-dialog">
+            <div class="confirm-header">
+                <div class="confirm-icon warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <div class="confirm-title">Подтверждение удаления</div>
+                <button class="confirm-close" id="closeConfirmDialog">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            <div class="confirm-body">
+                <p>Вы действительно хотите удалить этого администратора?</p>
+                <div class="confirm-user-info">
+                    <div class="confirm-user-avatar" id="confirmUserAvatar"></div>
+                    <div class="confirm-user-details">
+                        <div class="confirm-user-name" id="confirmUserName"></div>
+                        <div class="confirm-user-email" id="confirmUserEmail"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="confirm-footer">
+                <button class="btn btn-sm btn-outline-secondary" id="cancelDeleteBtn">
+                    Отмена
+                </button>
+                <button class="btn btn-sm btn-danger" id="proceedDeleteBtn">
+                    <i class="bi bi-trash"></i> Удалить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('createSuperuserForm');
@@ -279,22 +313,51 @@
             errorBlock.textContent = '';
         });
 
-        function deleteSuperuser(userId, username, firstName, lastName) {
-            userIdToDelete = userId;
-            usernameToDelete = username;
-            userFirstNameToDelete = firstName;
-            userLastNameToDelete = lastName;
+        function deleteSuperuser(userId, firstName, lastName) {
+            const userElement = document.querySelector(`[data-user-id="${userId}"]`);
+            const username = userElement.querySelector('h5').textContent;
+            const email = userElement.querySelector('small').textContent;
+            const avatarElement = userElement.querySelector('.avatar-circle');
+            const avatarText = avatarElement.textContent;
+            const avatarColor = avatarElement.style.backgroundColor;
 
-            document.getElementById('deleteUsername').textContent = usernameToDelete;
-            document.getElementById('deleteFirstName').textContent = userFirstNameToDelete;
-            document.getElementById('deleteLastName').textContent = userLastNameToDelete;
+            // Заполняем данные в окне подтверждения
+            document.getElementById('confirmUserName').textContent = username;
+            document.getElementById('confirmUserEmail').textContent = email;
 
-            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
-            modal.show();
+            const confirmAvatar = document.getElementById('confirmUserAvatar');
+            confirmAvatar.textContent = avatarText;
+            confirmAvatar.style.backgroundColor = avatarColor;
+
+            // Показываем окно подтверждения
+            const confirmOverlay = document.getElementById('deleteConfirmOverlay');
+            confirmOverlay.style.display = 'flex';
+
+            // Сохраняем ID пользователя для удаления
+            confirmOverlay.dataset.userId = userId;
         }
 
-        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-            fetch(`/delete_superuser/${userIdToDelete}/`, {
+        // Обработчики для кнопок в окне подтверждения
+        document.getElementById('closeConfirmDialog').addEventListener('click', closeConfirmDialog);
+        document.getElementById('cancelDeleteBtn').addEventListener('click', closeConfirmDialog);
+
+        function closeConfirmDialog() {
+            const confirmOverlay = document.getElementById('deleteConfirmOverlay');
+            const confirmDialog = confirmOverlay.querySelector('.confirm-dialog');
+
+            confirmDialog.style.animation = 'confirmFadeOut 0.3s ease forwards';
+
+            setTimeout(() => {
+                confirmOverlay.style.display = 'none';
+                confirmDialog.style.animation = 'confirmFadeIn 0.3s ease forwards';
+            }, 300);
+        }
+
+        document.getElementById('proceedDeleteBtn').addEventListener('click', function() {
+            const confirmOverlay = document.getElementById('deleteConfirmOverlay');
+            const userId = confirmOverlay.dataset.userId;
+
+            fetch(`/delete_superuser/${userId}/`, {
                 method: 'DELETE',
                 headers: {
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
@@ -303,18 +366,29 @@
                 .then(response => response.json())
                 .then(data => {
                     showNotification(
-                        data.success ? 'Суперпользователь успешно удален' : 'Ошибка при удалении суперпользователя',
+                        data.success ? 'Администратор успешно удален' : 'Ошибка при удалении администратора',
                         data.success
                     );
                     loadSuperusers();
                 })
                 .catch(error => {
                     console.error('Ошибка:', error);
-                    showNotification('Произошла ошибка при удалении суперпользователя', false);
+                    showNotification('Произошла ошибка при удалении администратора', false);
                 });
 
-            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
-            modal.hide();
+            closeConfirmDialog();
+        });
+
+        // Добавляем обработчик клавиш для окна подтверждения
+        document.addEventListener('keydown', function(e) {
+            const confirmOverlay = document.getElementById('deleteConfirmOverlay');
+            if (confirmOverlay.style.display === 'flex') {
+                if (e.key === 'Escape') {
+                    closeConfirmDialog();
+                } else if (e.key === 'Enter') {
+                    document.getElementById('proceedDeleteBtn').click();
+                }
+            }
         });
 
         function showNotification(message, success = true, autoClose = true) {
@@ -354,7 +428,20 @@
         }
         return color;
     }
+    document.addEventListener('DOMContentLoaded', function() {
+        // Проверяем, есть ли уже открытые модальные окна
+        const existingModals = document.querySelectorAll('.modal-backdrop');
+        if (existingModals.length > 0) {
+            existingModals.forEach(modal => modal.remove());
+            document.body.classList.remove('modal-open');
+        }
 
+        // Исправляем z-index для модального окна
+        const createModal = document.getElementById('createSuperUserModal');
+        if (createModal) {
+            createModal.style.zIndex = '1060';
+        }
+    });
 </script>
 
 <style>
@@ -397,6 +484,155 @@
         color: white;
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    .confirm-overlay {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(3px);
+        transition: all 0.3s ease;
+    }
+
+    .confirm-wrapper {
+        max-width: 450px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .confirm-dialog {
+        background-color: #212529;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+        transform: translateY(0);
+        transition: all 0.3s ease;
+        border: 1px solid #343a40;
+        animation: confirmFadeIn 0.3s ease forwards;
+    }
+
+    .confirm-header {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid #343a40;
+    }
+
+    .confirm-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+
+    .confirm-icon.warning {
+        background-color: #ffc107;
+        color: #212529;
+    }
+
+    .confirm-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: #fff;
+        flex-grow: 1;
+    }
+
+    .confirm-close {
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        font-size: 18px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s;
+    }
+
+    .confirm-close:hover {
+        color: #fff;
+    }
+
+    .confirm-body {
+        padding: 15px 20px;
+        color: #ced4da;
+    }
+
+    .confirm-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 10px 20px 15px;
+    }
+
+    .confirm-user-info {
+        display: flex;
+        align-items: center;
+        background-color: #2c3034;
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 15px;
+    }
+
+    .confirm-user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+        color: white;
+        margin-right: 12px;
+    }
+
+    .confirm-user-details {
+        flex-grow: 1;
+    }
+
+    .confirm-user-name {
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .confirm-user-email {
+        font-size: 13px;
+        color: #adb5bd;
+    }
+
+    @keyframes confirmFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes confirmFadeOut {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(20px);
+        }
     }
 </style>
 
