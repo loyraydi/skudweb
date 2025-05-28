@@ -1,0 +1,1511 @@
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-5 mb-5">
+  <!-- Скрытая форма для отправки данных -->
+  <form id="deviceForm" method="post" action="{% url 'update_device_field' device.id_device %}" style="display: none;">
+    {% csrf_token %}
+    <input type="hidden" id="field_name" name="field_name" value="">
+    <input type="hidden" id="field_value" name="field_value" value="">
+  </form>
+
+  <div class="row justify-content-center">
+    <div class="col-md-11 col-lg-10">
+      <div class="device-card">
+        <div class="card-header text-white text-center">
+          {% if device %}
+          <div class="device-avatar">
+            <i class="bi bi-router"></i>
+          </div>
+          <h4 class="header-title">Информация об устройстве</h4>
+          <div class="device-name">{{ device.name }}</div>
+          {% else %}
+          <h4 class="header-title">Устройство не найдено</h4>
+          {% endif %}
+        </div>
+
+        <div class="card-body">
+          {% if device %}
+          <!-- ID устройства и статус -->
+          <div class="device-header-info">
+            <div class="card-id">
+              <i class="bi bi-cpu"></i>
+              ID: {{ device.id_device }}
+            </div>
+
+            <!-- Блок статуса устройства -->
+            <div class="device-status-block">
+              <div class="status-label">
+                <i class="bi bi-activity"></i>
+                Статус устройства
+              </div>
+              <div class="status-content">
+                <div id="device_status_display" class="status-display">
+                  {% if device.device_status == 'normal' %}
+                  <div class="status-badge status-normal">
+                    <i class="bi bi-check-circle"></i>
+                    Нормальный
+                  </div>
+                  {% elif device.device_status == 'timed out' %}
+                  <div class="status-badge status-timeout">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Таймаут
+                  </div>
+                  {% elif device.device_status == 'error' %}
+                  <div class="status-badge status-error">
+                    <i class="bi bi-x-circle"></i>
+                    Ошибка
+                  </div>
+                  {% else %}
+                  <div class="status-badge status-unknown">
+                    <i class="bi bi-question-circle"></i>
+                    Неизвестно
+                  </div>
+                  {% endif %}
+                </div>
+                {% if perms.myapp.change_device %}
+                <button type="button" class="edit-btn" onclick="editField('device_status', '{{ device.device_status }}')">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                {% endif %}
+              </div>
+
+              <!-- Редактирование статуса -->
+              <div id="device_status_edit" class="edit-field">
+                <div class="radio-group-custom">
+                  <div class="radio-item">
+                    <input type="radio" class="btn-check" id="statusNormal" name="device_status" value="normal"
+                           {% if device.device_status == 'normal' %}checked{% endif %} autocomplete="off">
+                    <label class="btn btn-outline-success" for="statusNormal">Нормальный</label>
+                  </div>
+                  <div class="radio-item">
+                    <input type="radio" class="btn-check" id="statusTimeout" name="device_status" value="timed out"
+                           {% if device.device_status == 'timed out' %}checked{% endif %} autocomplete="off">
+                    <label class="btn btn-outline-warning" for="statusTimeout">Таймаут</label>
+                  </div>
+                  <div class="radio-item">
+                    <input type="radio" class="btn-check" id="statusError" name="device_status" value="error"
+                           {% if device.device_status == 'error' %}checked{% endif %} autocomplete="off">
+                    <label class="btn btn-outline-danger" for="statusError">Ошибка</label>
+                  </div>
+                </div>
+                <div class="edit-buttons">
+                  <button type="button" class="btn btn-success btn-sm" onclick="saveField('device_status')">
+                    <i class="bi bi-check"></i> Сохранить
+                  </button>
+                  <button type="button" class="btn btn-danger btn-sm" onclick="cancelEdit('device_status')">
+                    <i class="bi bi-x"></i> Отмена
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Блок активации -->
+            <div class="activation-status-block">
+              <div class="status-label">
+                <i class="bi bi-power"></i>
+                Активация
+              </div>
+              <div class="status-content">
+                <div id="device_activated_display" class="status-display">
+                  {% if device.device_activated %}
+                  <div class="status-badge status-active">
+                    <i class="bi bi-toggle-on"></i>
+                    Активировано
+                  </div>
+                  {% else %}
+                  <div class="status-badge status-inactive">
+                    <i class="bi bi-toggle-off"></i>
+                    Деактивировано
+                  </div>
+                  {% endif %}
+                </div>
+                {% if perms.myapp.change_device %}
+                <button type="button" class="edit-btn" onclick="toggleActivation()">
+                  <i class="bi bi-toggle2-off"></i>
+                </button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Основная информация -->
+          <div class="info-section">
+            <h5 class="section-title">
+              <i class="bi bi-info-circle"></i>
+              Основная информация
+            </h5>
+
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-tag"></i>
+                  Название устройства
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="name_display" class="info-value">{{ device.name }}</div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('name', '{{ device.name|escapejs }}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="name_edit" class="edit-field">
+                  <div class="edit-input-group">
+                    <input type="text" class="form-control" id="name_input" value="{{ device.name }}">
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('name')">
+                        <i class="bi bi-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('name')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-globe"></i>
+                  IP адрес
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="ip_display" class="info-value">
+                    {% if device.ip %}
+                    <span class="ip-address">{{ device.ip }}</span>
+                    {% else %}
+                    <span class="empty-value">Не указан</span>
+                    {% endif %}
+                  </div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('ip', '{{ device.ip|default:""|escapejs }}')">
+                  <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="ip_edit" class="edit-field">
+                  <div class="edit-input-group">
+                    <input type="text" class="form-control" id="ip_input" value="{{ device.ip|default:"" }}"
+                    placeholder="192.168.1.100">
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('ip')">
+                        <i class="bi bi-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('ip')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-ethernet"></i>
+                  MAC адрес
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="mac_display" class="info-value">
+                    <span class="mac-address">{{ device.mac }}</span>
+                  </div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('mac', '{{ device.mac|escapejs }}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="mac_edit" class="edit-field">
+                  <div class="edit-input-group">
+                    <input type="text" class="form-control" id="mac_input" value="{{ device.mac }}"
+                           placeholder="AA:BB:CC:DD:EE:FF">
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('mac')">
+                        <i class="bi bi-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('mac')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-eye"></i>
+                  Проверяемость
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="checkable_display" class="info-value">
+                    {% if device.checkable %}
+                    <span class="badge bg-success">Включена</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Отключена</span>
+                    {% endif %}
+                  </div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="toggleCheckable()">
+                    <i class="bi bi-toggle2-off"></i>
+                  </button>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Токены и API -->
+          <div class="info-section">
+            <h5 class="section-title">
+              <i class="bi bi-key"></i>
+              Токены и API
+            </h5>
+
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-shield-lock"></i>
+                  Токен устройства
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="token_display" class="info-value">
+                    <span class="token-display">{{ device.token|truncatechars:20 }}...</span>
+                    <button type="button" class="btn btn-sm btn-outline-info ms-2" onclick="toggleTokenVisibility('token')">
+                      <i class="bi bi-eye" id="token_eye"></i>
+                    </button>
+                  </div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('token', '{{ device.token|escapejs }}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="token_edit" class="edit-field">
+                  <div class="edit-input-group">
+                    <textarea class="form-control" id="token_input" rows="3">{{ device.token }}</textarea>
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('token')">
+                        <i class="bi bi-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('token')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-telegram"></i>
+                  Telegram токен
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="tg_token_display" class="info-value">
+                    {% if device.tg_token %}
+                    <span class="token-display">{{ device.tg_token|truncatechars:20 }}...</span>
+                    <button type="button" class="btn btn-sm btn-outline-info ms-2" onclick="toggleTokenVisibility('tg_token')">
+                      <i class="bi bi-eye" id="tg_token_eye"></i>
+                    </button>
+                    {% else %}
+                    <span class="empty-value">Не указан</span>
+                    {% endif %}
+                  </div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('tg_token', '{{ device.tg_token|default:""|escapejs }}')">
+                  <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="tg_token_edit" class="edit-field">
+                  <div class="edit-input-group">
+                    <textarea class="form-control" id="tg_token_input" rows="3">{{ device.tg_token|default:"" }}</textarea>
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('tg_token')">
+                        <i class="bi bi-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('tg_token')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item full-width">
+                <div class="info-label">
+                  <i class="bi bi-code-square"></i>
+                  Device API
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="device_api_display" class="info-value">
+                    {% if device.device_api %}
+                    <pre class="json-preview">{{ device.device_api|pprint }}</pre>
+                    {% else %}
+                    <span class="empty-value">Не настроен</span>
+                    {% endif %}
+                  </div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('device_api', '{{ device.device_api|escapejs }}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="device_api_edit" class="edit-field">
+                  <div class="json-editor">
+                    <label class="form-label">JSON конфигурация API:</label>
+                    <textarea class="form-control json-input" id="device_api_input" rows="8">{{ device.device_api|pprint }}</textarea>
+                    <div class="json-tools">
+                      <button type="button" class="btn btn-outline-info btn-sm" onclick="formatJSON('device_api')">
+                        <i class="bi bi-code"></i> Форматировать
+                      </button>
+                      <button type="button" class="btn btn-outline-warning btn-sm" onclick="validateJSON('device_api')">
+                        <i class="bi bi-check-square"></i> Проверить
+                      </button>
+                    </div>
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('device_api')">
+                        <i class="bi bi-check"></i> Сохранить
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('device_api')">
+                        <i class="bi bi-x"></i> Отмена
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Настройки попыток -->
+          <div class="info-section">
+            <h5 class="section-title">
+              <i class="bi bi-arrow-repeat"></i>
+              Настройки попыток
+            </h5>
+
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-unlock"></i>
+                  Попытки открытия
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="trying_open_display" class="info-value">{{ device.trying_open }}</div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('trying_open', '{{ device.trying_open }}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="trying_open_edit" class="edit-field">
+                  <div class="edit-input-group">
+                    <input type="number" class="form-control" id="trying_open_input" value="{{ device.trying_open }}" min="0">
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('trying_open')">
+                        <i class="bi bi-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('trying_open')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-lock"></i>
+                  Попытки закрытия
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="trying_close_display" class="info-value">{{ device.trying_close }}</div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('trying_close', '{{ device.trying_close }}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="trying_close_edit" class="edit-field">
+                  <div class="edit-input-group">
+                    <input type="number" class="form-control" id="trying_close_input" value="{{ device.trying_close }}" min="0">
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('trying_close')">
+                        <i class="bi bi-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('trying_close')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-exclamation-triangle"></i>
+                  Максимум попыток
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="trying_max_display" class="info-value">{{ device.trying_max }}</div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('trying_max', '{{ device.trying_max }}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="trying_max_edit" class="edit-field">
+                  <div class="edit-input-group">
+                    <input type="number" class="form-control" id="trying_max_input" value="{{ device.trying_max }}" min="1">
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('trying_max')">
+                        <i class="bi bi-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('trying_max')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-clock"></i>
+                  Задержка (сек)
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="trying_delay_display" class="info-value">{{ device.trying_delay }}</div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('trying_delay', '{{ device.trying_delay }}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="trying_delay_edit" class="edit-field">
+                  <div class="edit-input-group">
+                    <input type="number" class="form-control" id="trying_delay_input" value="{{ device.trying_delay }}" min="0">
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('trying_delay')">
+                        <i class="bi bi-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('trying_delay')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-label">
+                  <i class="bi bi-stopwatch"></i>
+                  Период проверки
+                </div>
+                <div class="d-flex align-items-center">
+                  <div id="period_display" class="info-value">{{ device.period }} сек</div>
+                  {% if perms.myapp.change_device %}
+                  <button type="button" class="edit-btn" onclick="editField('period', '{{ device.period }}')">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  {% endif %}
+                </div>
+                <div id="period_edit" class="edit-field">
+                  <div class="edit-input-group">
+                    <input type="number" class="form-control" id="period_input" value="{{ device.period }}" min="0">
+                    <div class="edit-buttons">
+                      <button type="button" class="btn btn-success" onclick="saveField('period')">
+                        <i class="bi bi-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-danger" onclick="cancelEdit('period')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Календарь -->
+          <div class="info-section">
+            <h5 class="section-title">
+              <i class="bi bi-calendar3"></i>
+              Календарь работы
+            </h5>
+
+            <div class="calendar-section">
+              <!-- Обычный календарь -->
+              <div class="calendar-block">
+                <h6 class="calendar-title">
+                  <i class="bi bi-calendar-check"></i>
+                  Обычный режим
+                </h6>
+                {% if device.calendar_regular %}
+                <div class="calendar-info">
+                  <div class="calendar-item">
+                    <span class="calendar-label">Дни открытия:</span>
+                    <span class="calendar-value">
+                                            {% for day in device.calendar_regular.open_day %}
+                                            <span class="badge bg-success me-1">{{ day }}</span>
+                                            {% empty %}
+                                            <span class="empty-value">Не указаны</span>
+                                            {% endfor %}
+                                        </span>
+                  </div>
+                  <div class="calendar-item">
+                    <span class="calendar-label">Время открытия:</span>
+                    <span class="calendar-value">{{ device.calendar_regular.open_time|default:"Не указано" }}</span>
+                  </div>
+                  <div class="calendar-item">
+                    <span class="calendar-label">Дни закрытия:</span>
+                    <span class="calendar-value">
+                                            {% for day in device.calendar_regular.close_day %}
+                                            <span class="badge bg-danger me-1">{{ day }}</span>
+                                            {% empty %}
+                                            <span class="empty-value">Не указаны</span>
+                                            {% endfor %}
+                                        </span>
+                  </div>
+                  <div class="calendar-item">
+                    <span class="calendar-label">Время закрытия:</span>
+                    <span class="calendar-value">{{ device.calendar_regular.close_time|default:"Не указано" }}</span>
+                  </div>
+                </div>
+                {% else %}
+                <div class="no-calendar">
+                  <i class="bi bi-calendar-x"></i>
+                  <span>Обычный календарь не настроен</span>
+                </div>
+                {% endif %}
+              </div>
+
+              <!-- Исключения -->
+              <div class="calendar-block">
+                <h6 class="calendar-title">
+                  <i class="bi bi-calendar-x"></i>
+                  Исключения
+                </h6>
+                {% if device.calendar_exception %}
+                <div class="calendar-info">
+                  <div class="calendar-item">
+                    <span class="calendar-label">Дни открытия:</span>
+                    <span class="calendar-value">
+                                            {% for day in device.calendar_exception.open_day %}
+                                            <span class="badge bg-info me-1">{{ day }}</span>
+                                            {% empty %}
+                                            <span class="empty-value">Не указаны</span>
+                                            {% endfor %}
+                                        </span>
+                  </div>
+                  <div class="calendar-item">
+                    <span class="calendar-label">Дни закрытия:</span>
+                    <span class="calendar-value">
+                                            {% for day in device.calendar_exception.close_day %}
+                                            <span class="badge bg-warning me-1">{{ day }}</span>
+                                            {% empty %}
+                                            <span class="empty-value">Не указаны</span>
+                                            {% endfor %}
+                                        </span>
+                  </div>
+                </div>
+                {% else %}
+                <div class="no-calendar">
+                  <i class="bi bi-calendar-x"></i>
+                  <span>Исключения не настроены</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            {% if perms.myapp.change_device %}
+            <div class="text-center mt-3">
+              <a href="{% url 'device_edit' device.id_device %}" class="btn btn-primary">
+                <i class="bi bi-calendar-plus"></i>
+                Настроить календарь
+              </a>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Кнопки действий -->
+          <div class="action-buttons">
+            <a class="btn-back" href="{% url 'device_list' %}">
+              <i class="bi bi-arrow-left"></i>
+              Вернуться к списку
+            </a>
+            {% if perms.myapp.change_device %}
+            <a class="btn-edit" href="{% url 'device_edit' device.id_device %}">
+              <i class="bi bi-gear-fill"></i>
+              Расширенное редактирование
+            </a>
+            {% endif %}
+          </div>
+
+          {% else %}
+          <div class="no-info">
+            <i class="bi bi-router" style="font-size: 3rem;"></i>
+            <p class="mb-0">Устройство не найдено в системе.</p>
+          </div>
+
+          <div class="text-center mt-4">
+            <a class="btn-back" href="{% url 'device_list' %}">
+              <i class="bi bi-arrow-left"></i>
+              Вернуться к списку устройств
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Основные стили */
+  .device-card {
+    background: var(--surface-1, #2c3034);
+    border-radius: var(--radius-lg, 1rem);
+    border: 1px solid var(--border-light, #3d3d42);
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .device-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .device-avatar {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: white;
+    margin: 0 auto 1rem;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .device-name {
+    font-size: 1.1rem;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-top: 0.5rem;
+  }
+
+  .card-body {
+    padding: 2rem;
+  }
+
+  /* Заголовок устройства */
+  .device-header-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .card-id {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface-3, #323236);
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius, 0.5rem);
+    font-family: monospace;
+    font-weight: 600;
+    color: var(--text-primary, #f5f5f5);
+    border: 1px solid var(--border-light, #3d3d42);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Блоки статуса */
+  .device-status-block,
+  .activation-status-block {
+    background: var(--surface-2, #383f42);
+    border-radius: var(--radius, 0.5rem);
+    padding: 1.25rem;
+    min-width: 250px;
+    flex: 1;
+    border: 1px solid var(--border-light, #3d3d42);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .status-label {
+    color: var(--text-secondary, #b0b0b0);
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .status-display {
+    flex: 1;
+  }
+
+  /* Статусы устройства */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    gap: 0.5rem;
+    border: 1px solid;
+    transition: all 0.2s ease;
+  }
+
+  .status-normal {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+
+  .status-timeout {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .status-error {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .status-unknown {
+    background: rgba(107, 114, 128, 0.15);
+    color: #6b7280;
+    border-color: rgba(107, 114, 128, 0.3);
+  }
+
+  .status-active {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+
+  .status-inactive {
+    background: rgba(156, 163, 175, 0.15);
+    color: #9ca3af;
+    border-color: rgba(156, 163, 175, 0.3);
+  }
+
+  /* Радиокнопки */
+  .radio-group-custom {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--surface-3, #323236);
+    border-radius: var(--radius-sm, 0.375rem);
+    border: 1px solid var(--border-light, #3d3d42);
+  }
+
+  .radio-item {
+    display: flex;
+    align-items: center;
+  }
+
+  .radio-item .btn {
+    margin: 0;
+    white-space: nowrap;
+    min-width: auto;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    border-radius: var(--radius-sm, 0.375rem);
+    transition: all 0.2s ease;
+  }
+
+  .btn-check:checked + .btn-outline-success {
+    background-color: #22c55e;
+    border-color: #22c55e;
+    color: white;
+  }
+
+  .btn-check:checked + .btn-outline-warning {
+    background-color: #f59e0b;
+    border-color: #f59e0b;
+    color: white;
+  }
+
+  .btn-check:checked + .btn-outline-danger {
+    background-color: #ef4444;
+    border-color: #ef4444;
+    color: white;
+  }
+
+  /* Секции информации */
+  .info-section {
+    margin-bottom: 2.5rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-light, #3d3d42);
+    color: var(--text-primary, #f5f5f5);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .info-item {
+    background: var(--surface-2, #383f42);
+    border-radius: var(--radius, 0.5rem);
+    padding: 1.25rem;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-light, #3d3d42);
+  }
+
+  .info-item.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .info-item:hover {
+    background: var(--surface-3, #323236);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .info-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary, #b0b0b0);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+  }
+
+  .info-value {
+    font-weight: 600;
+    color: var(--text-primary, #f5f5f5);
+    word-break: break-word;
+    line-height: 1.4;
+  }
+
+  .empty-value {
+    color: var(--text-tertiary, #808080);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  /* Специальные стили для адресов */
+  .ip-address,
+  .mac-address {
+    font-family: 'Courier New', monospace;
+    background: rgba(99, 102, 241, 0.15);
+    color: #6366f1;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm, 0.375rem);
+    font-weight: 600;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+
+  /* Токены */
+  .token-display {
+    font-family: 'Courier New', monospace;
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm, 0.375rem);
+    font-weight: 600;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+  }
+
+  /* JSON редактор */
+  .json-preview {
+    background: var(--surface-3, #323236);
+    border: 1px solid var(--border-light, #3d3d42);
+    border-radius: var(--radius-sm, 0.375rem);
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    color: var(--text-primary, #f5f5f5);
+    max-height: 200px;
+    overflow-y: auto;
+    margin: 0;
+  }
+
+  .json-editor {
+    background: var(--surface-3, #323236);
+    padding: 1.25rem;
+    border-radius: var(--radius, 0.5rem);
+    margin-top: 0.75rem;
+    border: 1px solid var(--border-light, #3d3d42);
+  }
+
+  .json-input {
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    background: var(--surface-4, #3d3d42);
+    border: 1px solid var(--border-light, #3d3d42);
+    color: var(--text-primary, #f5f5f5);
+    resize: vertical;
+  }
+
+  .json-tools {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+
+  /* Календарь */
+  .calendar-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .calendar-block {
+    background: var(--surface-2, #383f42);
+    border-radius: var(--radius, 0.5rem);
+    padding: 1.25rem;
+    border: 1px solid var(--border-light, #3d3d42);
+  }
+
+  .calendar-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary, #f5f5f5);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .calendar-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .calendar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .calendar-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary, #b0b0b0);
+    font-weight: 500;
+  }
+
+  .calendar-value {
+    font-weight: 600;
+    color: var(--text-primary, #f5f5f5);
+  }
+
+  .no-calendar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-tertiary, #808080);
+    font-style: italic;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  /* Кнопки редактирования */
+  .edit-btn {
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.5rem;
+    margin-left: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  .edit-btn:hover {
+    background: rgba(99, 102, 241, 0.4);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  }
+
+  .edit-field {
+    margin-top: 1rem;
+    display: none;
+  }
+
+  .edit-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .edit-input-group .form-control {
+    width: 100%;
+    background: var(--surface-3, #323236);
+    border: 1px solid var(--border-light, #3d3d42);
+    color: var(--text-primary, #f5f5f5);
+    padding: 0.75rem;
+    border-radius: var(--radius-sm, 0.375rem);
+    transition: all 0.2s ease;
+  }
+
+  .edit-input-group .form-control:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+    background: var(--surface-4, #3d3d42);
+  }
+
+  .edit-buttons {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .edit-buttons .btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm, 0.375rem);
+    transition: all 0.2s ease;
+  }
+
+  /* Кнопки действий */
+  .action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-light, #3d3d42);
+  }
+
+  .btn-back {
+    background: var(--surface-3, #323236);
+    color: var(--text-primary, #f5f5f5);
+    border: 1px solid var(--border-light, #3d3d42);
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius, 0.5rem);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    text-decoration: none;
+  }
+
+  .btn-back:hover {
+    background: var(--surface-4, #3d3d42);
+    color: var(--text-primary, #f5f5f5);
+    transform: translateY(-2px);
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn-edit {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: white;
+    border: none;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius, 0.5rem);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    text-decoration: none;
+  }
+
+  .btn-edit:hover {
+    background: linear-gradient(135deg, #4f46e5, #3730a3);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    color: white;
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  /* Сообщение об отсутствии информации */
+  .no-info {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    padding: 2rem;
+    border-radius: var(--radius, 0.5rem);
+    text-align: center;
+    margin: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  /* Бейджи */
+  .badge {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: var(--radius-sm, 0.375rem);
+    border: 1px solid transparent;
+  }
+
+  .bg-success {
+    background-color: #22c55e !important;
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+
+  .bg-danger {
+    background-color: #ef4444 !important;
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .bg-info {
+    background-color: #06b6d4 !important;
+    border-color: rgba(6, 182, 212, 0.3);
+  }
+
+  .bg-warning {
+    background-color: #f59e0b !important;
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .bg-secondary {
+    background-color: #6b7280 !important;
+    border-color: rgba(107, 114, 128, 0.3);
+  }
+
+  /* Адаптивность */
+  @media (max-width: 768px) {
+    .device-header-info {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .device-status-block,
+    .activation-status-block {
+      min-width: auto;
+    }
+
+    .status-content {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .action-buttons {
+      grid-template-columns: 1fr;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .calendar-section {
+      grid-template-columns: 1fr;
+    }
+
+    .card-body {
+      padding: 1.25rem;
+    }
+
+    .json-tools {
+      justify-content: center;
+    }
+
+    .edit-buttons {
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .radio-group-custom {
+      justify-content: center;
+    }
+
+    .radio-item .btn {
+      font-size: 0.75rem;
+      padding: 0.375rem 0.75rem;
+    }
+
+    .card-id {
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 0.375rem 0.75rem;
+    }
+  }
+</style>
+
+<script>
+  // Функция для редактирования поля
+  function editField(fieldName, currentValue) {
+    console.log('Редактирование поля:', fieldName, 'текущее значение:', currentValue);
+
+    const displayElement = document.getElementById(fieldName + '_display');
+    const editElement = document.getElementById(fieldName + '_edit');
+
+    if (!displayElement || !editElement) {
+      console.error('Элементы не найдены для поля:', fieldName);
+      return;
+    }
+
+    displayElement.style.display = 'none';
+    editElement.style.display = 'block';
+
+    // Специальная обработка для разных типов полей
+    if (fieldName === 'device_status') {
+      console.log('Редактирование статуса устройства');
+    } else if (fieldName === 'device_api') {
+      const input = document.getElementById(fieldName + '_input');
+      if (input && currentValue) {
+        try {
+          // Форматируем JSON для лучшего отображения
+          const parsed = JSON.parse(currentValue);
+          input.value = JSON.stringify(parsed, null, 2);
+        } catch (e) {
+          input.value = currentValue;
+        }
+        input.focus();
+      }
+    } else {
+      // Для обычных полей ввода
+      const input = document.getElementById(fieldName + '_input');
+      if (input) {
+        const decodedValue = currentValue
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&amp;/g, '&');
+        input.value = decodedValue;
+        input.focus();
+      }
+    }
+  }
+
+  // Функция для отмены редактирования
+  function cancelEdit(fieldName) {
+    const displayElement = document.getElementById(fieldName + '_display');
+    const editElement = document.getElementById(fieldName + '_edit');
+
+    if (displayElement) displayElement.style.display = 'block';
+    if (editElement) editElement.style.display = 'none';
+  }
+
+  // Функция для сохранения поля
+  function saveField(fieldName) {
+    let fieldValue;
+
+    // Получаем значение в зависимости от типа поля
+    if (fieldName === 'device_status') {
+      const radio = document.querySelector('input[name="device_status"]:checked');
+      fieldValue = radio ? radio.value : '';
+    } else if (fieldName === 'device_api') {
+      const input = document.getElementById(fieldName + '_input');
+      if (input) {
+        try {
+          // Проверяем валидность JSON
+          const parsed = JSON.parse(input.value);
+          fieldValue = JSON.stringify(parsed);
+        } catch (e) {
+          alert('Ошибка в JSON формате: ' + e.message);
+          return;
+        }
+      }
+    } else {
+      const input = document.getElementById(fieldName + '_input');
+      fieldValue = input ? input.value : '';
+    }
+
+    // Устанавливаем значения в скрытые поля формы
+    const fieldNameInput = document.getElementById('field_name');
+    const fieldValueInput = document.getElementById('field_value');
+
+    if (fieldNameInput) fieldNameInput.value = fieldName;
+    if (fieldValueInput) fieldValueInput.value = fieldValue;
+
+    console.log('Отправка формы с полем:', fieldName, 'значение:', fieldValue);
+
+    // Отправляем форму
+    const form = document.getElementById('deviceForm');
+    if (form) {
+      form.submit();
+    } else {
+      console.error('Форма не найдена');
+    }
+  }
+
+  // Функция переключения активации
+  function toggleActivation() {
+    const fieldNameInput = document.getElementById('field_name');
+    const fieldValueInput = document.getElementById('field_value');
+
+    if (fieldNameInput) fieldNameInput.value = 'device_activated';
+    if (fieldValueInput) {
+      // Переключаем значение
+      const currentValue = {{ device.device_activated|yesno:"true,false" }};
+      fieldValueInput.value = currentValue === 'true' ? 'false' : 'true';
+    }
+
+    const form = document.getElementById('deviceForm');
+    if (form) {
+      form.submit();
+    }
+  }
+
+  // Функция переключения проверяемости
+  function toggleCheckable() {
+    const fieldNameInput = document.getElementById('field_name');
+    const fieldValueInput = document.getElementById('field_value');
+
+    if (fieldNameInput) fieldNameInput.value = 'checkable';
+    if (fieldValueInput) {
+      const currentValue = {{ device.checkable|yesno:"true,false" }};
+      fieldValueInput.value = currentValue === 'true' ? 'false' : 'true';
+    }
+
+    const form = document.getElementById('deviceForm');
+    if (form) {
+      form.submit();
+    }
+  }
+
+  // Функция показа/скрытия токена
+  function toggleTokenVisibility(tokenType) {
+    const displayElement = document.getElementById(tokenType + '_display');
+    const eyeIcon = document.getElementById(tokenType + '_eye');
+
+    if (!displayElement || !eyeIcon) return;
+
+    const tokenSpan = displayElement.querySelector('.token-display');
+    if (!tokenSpan) return;
+
+    const isHidden = tokenSpan.textContent.includes('...');
+
+    if (isHidden) {
+      // Показываем полный токен
+      const fullToken = tokenType === 'token' ? '{{ device.token|escapejs }}' : '{{ device.tg_token|default:""|escapejs }}';
+      tokenSpan.textContent = fullToken;
+      eyeIcon.className = 'bi bi-eye-slash';
+    } else {
+      // Скрываем токен
+      const shortToken = tokenType === 'token' ? '{{ device.token|truncatechars:20|escapejs }}...' : '{{ device.tg_token|truncatechars:20|default:""|escapejs }}...';
+      tokenSpan.textContent = shortToken;
+      eyeIcon.className = 'bi bi-eye';
+    }
+  }
+
+  // Функция форматирования JSON
+  function formatJSON(fieldName) {
+    const input = document.getElementById(fieldName + '_input');
+    if (!input) return;
+
+    try {
+      const parsed = JSON.parse(input.value);
+      input.value = JSON.stringify(parsed, null, 2);
+
+      // Визуальная обратная связь
+      input.style.borderColor = '#22c55e';
+      setTimeout(() => {
+        input.style.borderColor = '';
+      }, 1000);
+    } catch (e) {
+      alert('Ошибка форматирования JSON: ' + e.message);
+      input.style.borderColor = '#ef4444';
+      setTimeout(() => {
+        input.style.borderColor = '';
+      }, 2000);
+    }
+  }
+
+  // Функция валидации JSON
+  function validateJSON(fieldName) {
+    const input = document.getElementById(fieldName + '_input');
+    if (!input) return;
+
+    try {
+      JSON.parse(input.value);
+      alert('JSON валиден!');
+      input.style.borderColor = '#22c55e';
+      setTimeout(() => {
+        input.style.borderColor = '';
+      }, 1000);
+    } catch (e) {
+      alert('Ошибка в JSON: ' + e.message);
+      input.style.borderColor = '#ef4444';
+      setTimeout(() => {
+        input.style.borderColor = '';
+      }, 2000);
+    }
+  }
+
+  // Инициализация при загрузке страницы
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен, страница устройства готова');
+  });
+</script>
+{% endblock %}

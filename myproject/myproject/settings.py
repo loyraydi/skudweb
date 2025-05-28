@@ -32,9 +32,9 @@ SECURE_SSL_REDIRECT=False
 SESSION_COOKIE_SECURE=False
 CSRF_COOKIE_SECURE=False
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://10.40.161.50>'
-]
+#CSRF_TRUSTED_ORIGINS = [
+#    'http://10.40.161.50>'
+#]
 
 ALLOWED_HOSTS = ['*']
 
@@ -64,6 +64,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "myapp.middleware.PermissionMiddleware",
 ]
 
 ROOT_URLCONF = "myproject.urls"
@@ -83,6 +84,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "myapp.context_processors.user_permissions",
             ],
         },
     },
@@ -97,10 +99,11 @@ WSGI_APPLICATION = "myproject.wsgi.application"
 DATABASES = {
     "default": {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'myapp',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': '127.0.0.1',
+        'NAME': 'sp_dbood',
+        'USER': 'dzverev',
+        'PASSWORD': 'rtf-123',
+        'HOST': '10.40.240.9',
+        'PORT': '3306',
         'ssl': {'ca': None},
         'OPTIONS': {'ssl_mode': 'DISABLED'},
     }

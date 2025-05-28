@@ -16,9 +16,9 @@
                         {% csrf_token %}
                         <!-- Выводим ошибки формы -->
                         {% if form.non_field_errors %}
-                            <div class="alert alert-danger">
-                                {{ form.non_field_errors }}
-                            </div>
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
                         {% endif %}
 
                         <!-- Поле для Access Level -->
@@ -26,7 +26,7 @@
                             <label class="form-label">Access Level</label>
                             <div class="btn-group" role="group" aria-label="Уровень пользователя">
                                 {% for choice in form.access_level.field.choices %}
-                                    <input
+                                <input
                                         type="checkbox"
                                         class="btn-check"
                                         id="btncheck{{ forloop.counter }}"
@@ -34,16 +34,16 @@
                                         value="{{ choice.0 }}"
                                         {% if choice.0 in form.access_level.value %}checked{% endif %}
                                         autocomplete="off"
-                                    >
-                                    <label class="btn btn-outline-primary" for="btncheck{{ forloop.counter }}">
-                                        {{ choice.1 }}
-                                    </label>
+                                >
+                                <label class="btn btn-outline-primary" for="btncheck{{ forloop.counter }}">
+                                    {{ choice.1 }}
+                                </label>
                                 {% endfor %}
                             </div>
                             {% if form.access_level.errors %}
-                                <div class="text-danger">
-                                    {{ form.access_level.errors|striptags }}
-                                </div>
+                            <div class="text-danger">
+                                {{ form.access_level.errors|striptags }}
+                            </div>
                             {% endif %}
                         </div>
 
@@ -52,51 +52,65 @@
                             <label class="form-label">Статус регистрации</label>
                             <div class="btn-group" role="group" aria-label="Registration Status">
                                 {% for choice in form.reg.field.choices %}
-                                    <input
+                                <input
                                         type="radio"
                                         class="btn-check"
                                         id="regStatus{{ forloop.counter }}"
                                         name="{{ form.reg.html_name }}"
                                         value="{{ choice.0 }}"
                                         {% if form.reg.value|stringformat:"s" == choice.0|stringformat:"s" %}checked{% endif %}
-                                        autocomplete="off"
-                                    >
-                                    <label class="btn btn-outline-primary" for="regStatus{{ forloop.counter }}">
-                                        {{ choice.1 }}
-                                    </label>
+                                autocomplete="off"
+                                >
+                                <label class="btn btn-outline-primary" for="regStatus{{ forloop.counter }}">
+                                    {{ choice.1 }}
+                                </label>
 
                                 {% endfor %}
                             </div>
                             {% if form.reg.errors %}
-                                <div class="text-danger">
-                                    {{ form.reg.errors|striptags }}
-                                </div>
+                            <div class="text-danger">
+                                {{ form.reg.errors|striptags }}
+                            </div>
                             {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="deviceSearch" placeholder="Поиск устройств...">
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="showOfflineDevices" checked>
+                                <label class="form-check-label" for="showOfflineDevices">Показывать отключенные устройства</label>
+                            </div>
                         </div>
 
                         <!-- JSON ACESSES -->
                         <div class="mb-3">
                             <label class="form-label">Выберите доступы:</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="access" value="#1" id="access1" {% if "#1" in selected_devices %}checked{% endif %}>
-                                <label class="form-check-label" for="access1">Управление шлагбаумом</label>
+                            <div class="mb-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllDevices()">Выбрать все</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllDevices()">Снять все</button>
+                                <span id="selectedDevicesCount" class="badge bg-primary">Выбрано: 0</span>
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="access" value="#2" id="access2" {% if "#2" in selected_devices %}checked{% endif %}>
-                                <label class="form-check-label" for="access2">Управление откатными воротами РТФ</label>
+                            {% if devices_list %}
+                            <div class="device-checkboxes">
+                                {% for device in devices_list %}
+                                <div class="form-check {% if device.device_status != 'normal' %}device-offline{% endif %}">
+                                    <input class="form-check-input device-checkbox" type="checkbox" name="access" value="#{{ device.id_device }}"
+                                           id="access{{ device.id_device }}" {% if device.is_selected %}checked{% endif %}>
+                                    <label class="form-check-label" for="access{{ device.id_device }}">
+                                        {{ device.name }}
+                                        {% if device.device_status != 'normal' %}
+                                        <span class="badge bg-warning text-dark ms-1">Offline</span>
+                                        {% endif %}
+                                    </label>
+                                </div>
+                                {% endfor %}
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="access" value="#3" id="access3" {% if "#3" in selected_devices %}checked{% endif %}>
-                                <label class="form-check-label" for="access3">Управление откатными воротами МТ</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="access" value="#4" id="access4" {% if "#4" in selected_devices %}checked{% endif %}>
-                                <label class="form-check-label" for="access4">Управление распашными воротами</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="access" value="#5" id="access5" {% if "#5" in selected_devices %}checked{% endif %}>
-                                <label class="form-check-label" for="access5">СКУД 108 Ключница</label>
-                            </div>
+                            {% else %}
+                            <div class="alert alert-warning">Устройства не найдены</div>
+                            {% endif %}
                         </div>
 
                         <div class="mb-3">
@@ -108,17 +122,17 @@
 
                         <!-- Выводим все поля формы, кроме code_activation и access_level -->
                         {% for field in form %}
-                            {% if field.name != 'access_level' and field.name != 'code_activation' and field.name != 'reg' and field.name != 'user_acesses' %}
-                                <div class="mb-3">
-                                    {{ field.label_tag }}
-                                    {{ field|add_class:"form-control" }}
-                                    {% if field.errors %}
-                                        <div class="text-danger">
-                                            {{ field.errors|striptags }}
-                                        </div>
-                                    {% endif %}
-                                </div>
+                        {% if field.name != 'access_level' and field.name != 'code_activation' and field.name != 'reg' and field.name != 'user_acesses' %}
+                        <div class="mb-3">
+                            {{ field.label_tag }}
+                            {{ field|add_class:"form-control" }}
+                            {% if field.errors %}
+                            <div class="text-danger">
+                                {{ field.errors|striptags }}
+                            </div>
                             {% endif %}
+                        </div>
+                        {% endif %}
 
                         {% endfor %}
 
@@ -143,6 +157,15 @@
     </div>
 </div>
 
+<style>
+    .device-offline {
+        opacity: 0.7;
+    }
+    .device-offline label {
+        color: #6c757d;
+    }
+</style>
+
 <script>
     // Функция генерации случайного 8-символьного кода
     function generateCode() {
@@ -154,14 +177,71 @@
         // Устанавливаем значение в поле code_activation
         document.getElementById('id_code_activation').value = code;
     }
-    document.addEventListener('DOMContentLoaded', () => {
-        const radios = document.querySelectorAll('input[name="{{ form.reg.html_name }}"]');
-        radios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                console.log(`Выбран статус: ${radio.value}`);
-            });
+
+    // Функция для переключения видимости offline устройств
+    function toggleOfflineDevices() {
+        const showOffline = document.getElementById('showOfflineDevices').checked;
+        console.log('Переключение видимости offline устройств:', showOffline);
+
+        document.querySelectorAll('.device-offline').forEach(device => {
+            if (showOffline) {
+                device.style.display = '';
+            } else {
+                device.style.display = 'none';
+            }
         });
-    });
+
+        // Обновляем счетчик после переключения
+        updateSelectedCount();
+    }
+
+    // Функция фильтрации устройств по поиску
+    function filterDevicesBySearch() {
+        const searchText = document.getElementById('deviceSearch').value.toLowerCase();
+        const showOffline = document.getElementById('showOfflineDevices').checked;
+
+        document.querySelectorAll('.device-checkboxes .form-check').forEach(item => {
+            const deviceName = item.querySelector('label').textContent.toLowerCase();
+            const isOffline = item.classList.contains('device-offline');
+
+            // Сначала проверяем соответствие поиску
+            let shouldShow = deviceName.includes(searchText);
+
+            // Если устройство offline и переключатель выключен, скрываем его
+            if (isOffline && !showOffline) {
+                shouldShow = false;
+            }
+
+            item.style.display = shouldShow ? '' : 'none';
+        });
+
+        // Обновляем счетчик после фильтрации
+        updateSelectedCount();
+    }
+
+    // Обновление счетчика выбранных устройств
+    function updateSelectedCount() {
+        const count = document.querySelectorAll('.device-checkbox:checked').length;
+        document.getElementById('selectedDevicesCount').textContent = `Выбрано: ${count}`;
+    }
+
+    // Выбрать все видимые устройства
+    function selectAllDevices() {
+        document.querySelectorAll('.device-checkboxes .form-check:not([style*="display: none"]) .device-checkbox').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectedCount();
+    }
+
+    // Снять выбор со всех видимых устройств
+    function deselectAllDevices() {
+        document.querySelectorAll('.device-checkboxes .form-check:not([style*="display: none"]) .device-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectedCount();
+    }
+
+    // Сохранение данных пользователя
     function saveUser() {
         // Собираем выбранные доступы
         let selectedDevices = [];
@@ -181,11 +261,58 @@
 
         // Преобразуем объект в строку JSON и добавляем в скрытое поле
         document.getElementById("id_user_acesses").value = JSON.stringify(userAccessData);
+
+        console.log("Сохраняемые доступы:", userAccessData);
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM загружен');
+
+        // Инициализация радио-кнопок
+        const radios = document.querySelectorAll('input[name="{{ form.reg.html_name }}"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                console.log(`Выбран статус: ${radio.value}`);
+            });
+        });
+
+        // Инициализация формы
         const form = document.querySelector('form');
-        form.addEventListener('submit', saveUser);
+        if (form) {
+            form.addEventListener('submit', saveUser);
+        }
+
+        // Инициализация переключателя offline устройств
+        const showOfflineToggle = document.getElementById('showOfflineDevices');
+        if (showOfflineToggle) {
+            console.log('Переключатель найден, начальное состояние:', showOfflineToggle.checked);
+            showOfflineToggle.addEventListener('change', function() {
+                console.log('Переключатель изменен:', this.checked);
+                toggleOfflineDevices();
+            });
+        }
+
+        // Инициализация поля поиска
+        const searchField = document.getElementById('deviceSearch');
+        if (searchField) {
+            searchField.addEventListener('input', filterDevicesBySearch);
+        }
+
+        // Инициализация счетчика выбранных устройств
+        updateSelectedCount();
+
+        // Добавляем обработчик изменения для чекбоксов устройств
+        document.querySelectorAll('.device-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedCount);
+        });
+
+        // Отладочная информация
+        console.log('Всего устройств:', document.querySelectorAll('.form-check').length);
+        console.log('Offline устройств:', document.querySelectorAll('.device-offline').length);
+
+        // Применяем начальное состояние переключателя
+        toggleOfflineDevices();
     });
 </script>
 

@@ -19,53 +19,113 @@
       {{ form.mac|add_class:"form-control" }}
     </div>
 
-    <div class="form-check mb-3">
-      {{ form.device_activated|add_class:"form-check-input" }}
-      <label class="form-check-label" for="id_device_activated">
-        Устройство активно
-      </label>
+    <div class="mb-3">
+      <label for="id_ip" class="form-label">IP-адрес</label>
+      <div class="ip-input-container">
+        <input type="text" maxlength="3" class="ip-segment form-control" data-index="0">
+        <span class="ip-dot">.</span>
+        <input type="text" maxlength="3" class="ip-segment form-control" data-index="1">
+        <span class="ip-dot">.</span>
+        <input type="text" maxlength="3" class="ip-segment form-control" data-index="2">
+        <span class="ip-dot">.</span>
+        <input type="text" maxlength="3" class="ip-segment form-control" data-index="3">
+        {{ form.ip|add_class:"d-none" }}
+      </div>
+      <small class="form-text text-muted">Формат: 255.255.255.255</small>
     </div>
 
-    <!-- Toggle calendar -->
-    <div class="form-check mb-3">
-      <input type="checkbox" name="calendar_toggle" id="calendarToggle" class="form-check-input">
-      <label class="form-check-label" for="calendarToggle">
-        Включить календарь
-      </label>
+    <!-- Стильный переключатель для активации устройства -->
+    <div class="mb-4">
+      <div class="d-flex align-items-center">
+        <div class="form-check form-switch">
+          <input type="checkbox" name="device_activated" id="id_device_activated" class="form-check-input toggle-switch" {% if form.device_activated.value %}checked{% endif %}>
+          <label class="form-check-label ms-2" for="id_device_activated">
+            Устройство активировано
+          </label>
+        </div>
+      </div>
     </div>
 
-    <!-- Calendar fields -->
-    <div id="calendarFields" style="display: none;">
-      <div class="mb-3">
-        <label for="id_open_day" class="form-label">Дни открытия (через запятую)</label>
-        <input type="text" name="open_day" id="id_open_day" class="form-control" value="{{ device.open_day|default:'' }}">
+    <!-- Стильный переключатель для календаря -->
+    <div class="mb-4">
+      <div class="d-flex align-items-center">
+        <div class="form-check form-switch">
+          <input type="checkbox" name="calendar_toggle" id="calendarToggle" class="form-check-input toggle-switch">
+          <label class="form-check-label ms-2" for="calendarToggle">
+            Включить календарь
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Улучшенные поля календаря -->
+    <div id="calendarFields" style="display: none;" class="calendar-section p-3 mb-4 rounded">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="id_open_day" class="form-label">Дни открытия</label>
+          <div class="day-selector" id="open-day-selector">
+            <div class="btn-group d-flex flex-wrap" role="group">
+              <button type="button" class="btn btn-outline-primary day-btn" data-day="Пн">Пн</button>
+              <button type="button" class="btn btn-outline-primary day-btn" data-day="Вт">Вт</button>
+              <button type="button" class="btn btn-outline-primary day-btn" data-day="Ср">Ср</button>
+              <button type="button" class="btn btn-outline-primary day-btn" data-day="Чт">Чт</button>
+              <button type="button" class="btn btn-outline-primary day-btn" data-day="Пт">Пт</button>
+              <button type="button" class="btn btn-outline-primary day-btn" data-day="Сб">Сб</button>
+              <button type="button" class="btn btn-outline-primary day-btn" data-day="Вс">Вс</button>
+            </div>
+            <input type="hidden" name="open_day" id="id_open_day" value="{{ device.open_day|default:'' }}">
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label for="id_open_time" class="form-label">Время открытия</label>
+          <input type="time" name="open_time" id="id_open_time" class="form-control" value="{{ device.open_time|default:'' }}">
+        </div>
       </div>
 
-      <div class="mb-3">
-        <label for="id_open_time" class="form-label">Время открытия</label>
-        <input type="text" name="open_time" id="id_open_time" class="form-control" value="{{ device.open_time|default:'' }}">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="id_close_day" class="form-label">Дни закрытия</label>
+          <div class="day-selector" id="close-day-selector">
+            <div class="btn-group d-flex flex-wrap" role="group">
+              <button type="button" class="btn btn-outline-danger day-btn" data-day="Пн">Пн</button>
+              <button type="button" class="btn btn-outline-danger day-btn" data-day="Вт">Вт</button>
+              <button type="button" class="btn btn-outline-danger day-btn" data-day="Ср">Ср</button>
+              <button type="button" class="btn btn-outline-danger day-btn" data-day="Чт">Чт</button>
+              <button type="button" class="btn btn-outline-danger day-btn" data-day="Пт">Пт</button>
+              <button type="button" class="btn btn-outline-danger day-btn" data-day="Сб">Сб</button>
+              <button type="button" class="btn btn-outline-danger day-btn" data-day="Вс">Вс</button>
+            </div>
+            <input type="hidden" name="close_day" id="id_close_day" value="{{ device.close_day|default:'' }}">
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label for="id_close_time" class="form-label">Время закрытия</label>
+          <input type="time" name="close_time" id="id_close_time" class="form-control" value="{{ device.close_time|default:'' }}">
+        </div>
       </div>
 
-      <div class="mb-3">
-        <label for="id_close_day" class="form-label">Дни закрытия (через запятую)</label>
-        <input type="text" name="close_day" id="id_close_day" class="form-control" value="{{ device.close_day|default:'' }}">
-      </div>
+      <h5 class="mt-4 mb-3">Исключения</h5>
 
-      <div class="mb-3">
-        <label for="id_close_time" class="form-label">Время закрытия</label>
-        <input type="text" name="close_time" id="id_close_time" class="form-control" value="{{ device.close_time|default:'' }}">
-      </div>
+      <div class="exception-section p-3 rounded">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="id_exception_open_day" class="form-label">Дни исключений открытия</label>
+            <div class="input-group date-picker-container">
+              <input type="text" name="exception_open_day" id="id_exception_open_day" class="form-control datepicker" value="{{ device.exception_open_day|default:'' }}" readonly>
+              <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+            </div>
+          </div>
 
-      <h5 class="mt-4">Исключения</h5>
-
-      <div class="mb-3">
-        <label for="id_exception_open_day" class="form-label">Дни исключений открытия (через запятую)</label>
-        <input type="text" name="exception_open_day" id="id_exception_open_day" class="form-control" value="{{ device.exception_open_day|default:'' }}">
-      </div>
-
-      <div class="mb-3">
-        <label for="id_exception_close_day" class="form-label">Дни исключений закрытия (через запятую)</label>
-        <input type="text" name="exception_close_day" id="id_exception_close_day" class="form-control" value="{{ device.exception_close_day|default:'' }}">
+          <div class="col-md-6 mb-3">
+            <label for="id_exception_close_day" class="form-label">Дни исключений закрытия</label>
+            <div class="input-group date-picker-container">
+              <input type="text" name="exception_close_day" id="id_exception_close_day" class="form-control datepicker" value="{{ device.exception_close_day|default:'' }}" readonly>
+              <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Скрытые поля для JSON -->
@@ -76,11 +136,11 @@
     <!-- Device API with CodeMirror -->
     <div class="mb-3">
       <label for="id_device_api" class="form-label">Device API (JSON)</label>
-      {{ form.device_api|add_class:"form-control"|attr:"id:id_device_api" }}
+      {{ form.device_api|add_class:"form-control"|attr:"rows:15" }}
     </div>
 
     <div class="mb-3">
-      <label for="id_trying_max" class="form-label">Попыток авторизации</label>
+      <label for="id_trying_max" class="form-label">Попыток на действие по расписанию</label>
       {{ form.trying_max|add_class:"form-control" }}
     </div>
 
@@ -88,6 +148,12 @@
     <a href="{% url 'device_list' %}" class="btn btn-secondary">Назад</a>
   </form>
 </div>
+
+<!-- Подключаем необходимые библиотеки -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
 
 <!-- CodeMirror + Toggle script -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
@@ -100,9 +166,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/foldgutter.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/brace-fold.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/fold/foldgutter.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-json.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/theme-monokai.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ext-language_tools.min.js"></script>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+    // Инициализация переключателя календаря
     const toggle = document.getElementById("calendarToggle");
     const calendarFields = document.getElementById("calendarFields");
 
@@ -125,59 +196,673 @@
 
     updateVisibility();
 
-    // Улучшенный CodeMirror
-    const deviceApiTextarea = document.getElementById("id_device_api");
-    if (deviceApiTextarea) {
-      // Сначала попробуем распарсить и отформатировать JSON
-      try {
-        let jsonValue = deviceApiTextarea.value;
-        // Удаляем экранированные символы, если они есть
-        if (jsonValue.includes('\\n') || jsonValue.includes('\\"')) {
-          jsonValue = JSON.parse('"' + jsonValue.replace(/"/g, '\\"') + '"');
+    // Инициализация селекторов дней
+    initDaySelectors();
+    // Инициализация выбора даты для исключений
+    initDatePickers();
+
+    // Инициализация JSON редактора
+    initJsonEditor();
+
+    // Инициализация IP-адреса
+    initIpAddress();
+  });
+
+  // Функция для инициализации селектора дней недели
+  function initDaySelector(selectorId, inputId) {
+    const container = document.getElementById(selectorId);
+    const buttons = container.querySelectorAll('.day-btn');
+    const input = document.getElementById(inputId);
+
+    // Установка начальных значений из input
+    if (input.value) {
+      const selectedDays = input.value.split(',').map(day => day.trim());
+      buttons.forEach(btn => {
+        if (selectedDays.includes(btn.dataset.day)) {
+          btn.classList.add('active');
         }
-        // Форматируем JSON
-        const parsedJson = JSON.parse(jsonValue);
-        deviceApiTextarea.value = JSON.stringify(parsedJson, null, 2);
-      } catch (e) {
-        console.error("Ошибка форматирования JSON:", e);
+      });
+    }
+
+    // Обработчик клика по кнопкам дней
+    buttons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        this.classList.toggle('active');
+        updateDaysInput();
+      });
+    });
+
+    // Обновление скрытого input
+    function updateDaysInput() {
+      const selectedDays = [];
+      buttons.forEach(btn => {
+        if (btn.classList.contains('active')) {
+          selectedDays.push(btn.dataset.day);
+        }
+      });
+      input.value = selectedDays.join(', ');
+    }
+  }
+
+  // Функция для инициализации выбора даты с проверкой дублирования
+  function initDatePickers() {
+    const exceptionOpenPicker = document.getElementById('id_exception_open_day');
+    const exceptionClosePicker = document.getElementById('id_exception_close_day');
+
+    // Массивы для хранения выбранных дат
+    let openDates = [];
+    let closeDates = [];
+
+    // Инициализация начальных значений
+    if (exceptionOpenPicker.value) {
+      openDates = exceptionOpenPicker.value.split(', ').map(date => date.trim());
+    }
+
+    if (exceptionClosePicker.value) {
+      closeDates = exceptionClosePicker.value.split(', ').map(date => date.trim());
+    }
+
+    // Инициализация flatpickr для дней исключений открытия
+    const openDayPicker = flatpickr(exceptionOpenPicker, {
+      mode: "multiple",
+      dateFormat: "d.m.Y",
+      locale: "ru",
+      conjunction: ", ",
+      allowInput: true,
+      disableMobile: true,
+      // Отключаем даты, которые уже выбраны в днях исключений закрытия
+      disable: [
+        function(date) {
+          const dateStr = date.getDate().toString().padStart(2, '0') + '.' +
+                  (date.getMonth() + 1).toString().padStart(2, '0') + '.' +
+                  date.getFullYear();
+          return closeDates.includes(dateStr);
+        }
+      ],
+      onChange: function(selectedDates, dateStr) {
+        // Обновляем массив открытых дат
+        openDates = dateStr ? dateStr.split(', ') : [];
+
+        // Обновляем ограничения для другого выбора дат
+        closeDayPicker.set('disable', [
+          function(date) {
+            const dateStr = date.getDate().toString().padStart(2, '0') + '.' +
+                    (date.getMonth() + 1).toString().padStart(2, '0') + '.' +
+                    date.getFullYear();
+            return openDates.includes(dateStr);
+          }
+        ]);
+
+        // Проверяем, нет ли конфликтов с уже выбранными датами закрытия
+        const conflictDates = closeDates.filter(date => openDates.includes(date));
+        if (conflictDates.length > 0) {
+          // Удаляем конфликтующие даты из закрытия
+          conflictDates.forEach(date => {
+            const index = closeDates.indexOf(date);
+            if (index !== -1) {
+              closeDates.splice(index, 1);
+            }
+          });
+
+          // Обновляем значение поля и flatpickr
+          closeDayPicker.setDate(closeDates, true);
+
+          // Показываем уведомление о конфликте
+          if (typeof AppNotifications !== 'undefined') {
+            AppNotifications.warning(
+                    `Даты ${conflictDates.join(', ')} были удалены из дней исключений закрытия, так как они уже выбраны в днях исключений открытия.`,
+                    'Конфликт дат',
+                    5000
+            );
+          } else {
+            alert(`Даты ${conflictDates.join(', ')} были удалены из дней исключений закрытия, так как они уже выбраны в днях исключений открытия.`);
+          }
+        }
+      }
+    });
+
+    // Инициализация flatpickr для дней исключений закрытия
+    const closeDayPicker = flatpickr(exceptionClosePicker, {
+      mode: "multiple",
+      dateFormat: "d.m.Y",
+      locale: "ru",
+      conjunction: ", ",
+      allowInput: true,
+      disableMobile: true,
+      // Отключаем даты, которые уже выбраны в днях исключений открытия
+      disable: [
+        function(date) {
+          const dateStr = date.getDate().toString().padStart(2, '0') + '.' +
+                  (date.getMonth() + 1).toString().padStart(2, '0') + '.' +
+                  date.getFullYear();
+          return openDates.includes(dateStr);
+        }
+      ],
+      onChange: function(selectedDates, dateStr) {
+        // Обновляем массив закрытых дат
+        closeDates = dateStr ? dateStr.split(', ') : [];
+
+        // Обновляем ограничения для другого выбора дат
+        openDayPicker.set('disable', [
+          function(date) {
+            const dateStr = date.getDate().toString().padStart(2, '0') + '.' +
+                    (date.getMonth() + 1).toString().padStart(2, '0') + '.' +
+                    date.getFullYear();
+            return closeDates.includes(dateStr);
+          }
+        ]);
+
+        // Проверяем, нет ли конфликтов с уже выбранными датами открытия
+        const conflictDates = openDates.filter(date => closeDates.includes(date));
+        if (conflictDates.length > 0) {
+          // Удаляем конфликтующие даты из открытия
+          conflictDates.forEach(date => {
+            const index = openDates.indexOf(date);
+            if (index !== -1) {
+              openDates.splice(index, 1);
+            }
+          });
+
+          // Обновляем значение поля и flatpickr
+          openDayPicker.setDate(openDates, true);
+
+          // Показываем уведомление о конфликте
+          if (typeof AppNotifications !== 'undefined') {
+            AppNotifications.warning(
+                    `Даты ${conflictDates.join(', ')} были удалены из дней исключений открытия, так как они уже выбраны в днях исключений закрытия.`,
+                    'Конфликт дат',
+                    5000
+            );
+          } else {
+            alert(`Даты ${conflictDates.join(', ')} были удалены из дней исключений открытия, так как они уже выбраны в днях исключений закрытия.`);
+          }
+        }
+      }
+    });
+
+    // Добавляем подсказку под полями
+    const exceptionSection = document.querySelector('.exception-section');
+    const helpText = document.createElement('div');
+    helpText.className = 'mt-2 small text-muted';
+    helpText.innerHTML = 'Примечание: Одна и та же дата не может быть одновременно днем исключения открытия и закрытия.';
+    exceptionSection.appendChild(helpText);
+  }
+
+  // Функция для инициализации JSON редактора
+  function initJsonEditor() {
+    const initialJsonField = document.querySelector('input[name="initial-device_api"]');
+    const deviceApiTextarea = document.getElementById("id_device_api");
+
+    if (deviceApiTextarea) {
+      // Создаем контейнер для Ace Editor
+      const editorContainer = document.createElement("div");
+      editorContainer.id = "json-editor";
+      editorContainer.style.height = "400px";
+      editorContainer.style.width = "100%";
+      editorContainer.style.borderRadius = "8px";
+      editorContainer.style.marginBottom = "15px";
+      editorContainer.style.border = "1px solid #444";
+      deviceApiTextarea.parentNode.insertBefore(editorContainer, deviceApiTextarea);
+      deviceApiTextarea.style.display = "none";
+
+      // Создаем панель инструментов
+      const toolbar = document.createElement("div");
+      toolbar.style.display = "flex";
+      toolbar.style.justifyContent = "flex-end";
+      toolbar.style.marginBottom = "10px";
+      editorContainer.parentNode.insertBefore(toolbar, editorContainer);
+
+      // Функция для преобразования строки с экранированными символами в объект JSON
+      function parseJsonValue(input) {
+        try {
+          // Если строка начинается и заканчивается кавычками, удаляем их
+          let processedInput = input;
+          if (processedInput.startsWith('"') && processedInput.endsWith('"')) {
+            processedInput = processedInput.slice(1, -1);
+          }
+
+          // Заменяем экранированные символы
+          processedInput = processedInput
+                  .replace(/\\"/g, '"')       // Заменяем \" на "
+                  .replace(/\\n/g, '')        // Удаляем \n
+                  .replace(/\\\\/g, '\\')     // Заменяем \\ на \
+                  .replace(/\\t/g, '');       // Удаляем \t
+
+          // Пробуем распарсить обработанную строку
+          return JSON.parse(processedInput);
+        } catch (e) {
+          console.error("Не удалось распарсить JSON:", e);
+          return {};
+        }
       }
 
-      // Инициализируем CodeMirror
-      const editor = CodeMirror.fromTextArea(deviceApiTextarea, {
-        mode: { name: "javascript", json: true },
-        theme: "dracula",
-        lineNumbers: true,
-        lineWrapping: false,
-        autoCloseBrackets: true,
-        matchBrackets: true,
-        indentUnit: 2,
-        tabSize: 2,
-        height: "auto",
-        viewportMargin: Infinity
+      // Получаем значение из текстового поля или из скрытого поля с начальным значением
+      let jsonValue = deviceApiTextarea.value || (initialJsonField ? initialJsonField.value : "");
+
+      // Преобразуем в объект JSON
+      let jsonObject = parseJsonValue(jsonValue);
+
+      // Форматируем JSON
+      let formattedJson = JSON.stringify(jsonObject, null, 2);
+
+      // Инициализируем Ace Editor
+      const editor = ace.edit("json-editor");
+      editor.setTheme("ace/theme/dracula");
+      editor.session.setMode("ace/mode/json");
+      editor.setValue(formattedJson);
+
+      // Исправляем опции (правильные названия)
+      editor.setOptions({
+        fontSize: "14px",
+        showPrintMargin: false,
+        showGutter: true,
+        highlightActiveLine: true,
+        wrap: true,
+        enableBasicAutocompletion: true,
+        enableLiveAutocompletion: true,
+        enableSnippets: true
       });
 
-      // Добавляем кнопку форматирования
-      const formatButton = document.createElement("button");
-      formatButton.textContent = "Форматировать JSON";
-      formatButton.className = "btn btn-sm btn-secondary mt-2";
-      formatButton.onclick = function(e) {
+      // Устанавливаем курсор в начало
+      editor.clearSelection();
+
+      // Синхронизируем значение с текстовым полем при отправке формы
+      const form = deviceApiTextarea.closest("form");
+      form.addEventListener("submit", function() {
+        try {
+          // Проверяем, что JSON валиден
+          const jsonObj = JSON.parse(editor.getValue());
+          // Устанавливаем отформатированный JSON
+          deviceApiTextarea.value = JSON.stringify(jsonObj);
+        } catch (e) {
+          AppNotifications.error("Невалидный JSON: " + e.message,"Ошибка валидации",5000);
+          return false;
+        }
+      });
+
+      // Добавляем кнопку для проверки валидности
+      const validateButton = document.createElement("button");
+      validateButton.textContent = "Проверить";
+      validateButton.className = "btn btn-secondary btn-sm ms-2";
+      validateButton.onclick = function(e) {
         e.preventDefault();
         try {
-          const value = editor.getValue();
-          const parsedJson = JSON.parse(value);
-          const formattedJson = JSON.stringify(parsedJson, null, 2);
-          editor.setValue(formattedJson);
+          JSON.parse(editor.getValue());
+          AppNotifications.success("JSON валиден !","Проверка JSON",3000);
         } catch (e) {
-          alert("Невалидный JSON: " + e.message);
+          AppNotifications.error("Ошибка в JSON: " + e.message,"Проверка JSON",5000);
         }
       };
-
-      // Добавляем кнопку после редактора
-      editor.getWrapperElement().parentNode.insertBefore(
-              formatButton,
-              editor.getWrapperElement().nextSibling
-      );
+      toolbar.appendChild(validateButton);
     }
-  });
+  }
+
+  // Функция для инициализации IP-адреса
+  function initIpAddress() {
+    const ipField = document.querySelector('#id_ip');
+    const ipSegments = document.querySelectorAll('.ip-segment');
+
+    if (ipField && ipSegments.length) {
+      // Заполняем сегменты из существующего значения
+      if (ipField.value) {
+        const parts = ipField.value.split('.');
+        parts.forEach((part, index) => {
+          if (index < ipSegments.length) {
+            ipSegments[index].value = part;
+          }
+        });
+      }
+
+      // Обработчики для сегментов IP
+      ipSegments.forEach(segment => {
+        // Только цифры
+        segment.addEventListener('input', function(e) {
+          this.value = this.value.replace(/[^0-9]/g, '');
+
+          // Проверка диапазона
+          const val = parseInt(this.value, 10);
+          if (val > 255) this.value = '255';
+
+          // Автоматический переход к следующему сегменту
+          if (this.value.length === 3) {
+            const nextIndex = parseInt(this.dataset.index) + 1;
+            if (nextIndex < ipSegments.length) {
+              ipSegments[nextIndex].focus();
+            }
+          }
+
+          // Обновляем скрытое поле
+          updateIpField();
+        });
+
+        // Навигация с помощью клавиш
+        segment.addEventListener('keydown', function(e) {
+          const index = parseInt(this.dataset.index);
+
+          // Стрелка вправо в конце поля - переход к следующему
+          if (e.key === 'ArrowRight' && this.selectionStart === this.value.length) {
+            if (index < ipSegments.length - 1) {
+              e.preventDefault();
+              ipSegments[index + 1].focus();
+            }
+          }
+
+          // Стрелка влево в начале поля - переход к предыдущему
+          if (e.key === 'ArrowLeft' && this.selectionStart === 0) {
+            if (index > 0) {
+              e.preventDefault();
+              ipSegments[index - 1].focus();
+              // Устанавливаем курсор в конец предыдущего поля
+              const len = ipSegments[index - 1].value.length;
+              ipSegments[index - 1].setSelectionRange(len, len);
+            }
+          }
+
+          // Точка - переход к следующему сегменту
+          if (e.key === '.') {
+            e.preventDefault();
+            if (index < ipSegments.length - 1) {
+              ipSegments[index + 1].focus();
+            }
+          }
+
+          // Backspace в пустом поле - переход к предыдущему
+          if (e.key === 'Backspace' && this.value === '' && index > 0) {
+            ipSegments[index - 1].focus();
+            // Устанавливаем курсор в конец предыдущего поля
+            const len = ipSegments[index - 1].value.length;
+            ipSegments[index - 1].setSelectionRange(len, len);
+          }
+        });
+      });
+
+      // Обновление скрытого поля IP
+      function updateIpField() {
+        const ipValues = Array.from(ipSegments).map(segment => segment.value || '0');
+        ipField.value = ipValues.join('.');
+      }
+
+      // Обработка отправки формы
+      const form = document.querySelector('form');
+      form.addEventListener('submit', function() {
+        updateIpField();
+      });
+    }
+  }
+  // Функция для инициализации селекторов дней с автоматическим вычитанием
+  function initDaySelectors() {
+    const openDaySelector = document.getElementById('open-day-selector');
+    const closeDaySelector = document.getElementById('close-day-selector');
+
+    const openDayButtons = openDaySelector.querySelectorAll('.day-btn');
+    const closeDayButtons = closeDaySelector.querySelectorAll('.day-btn');
+
+    const openDayInput = document.getElementById('id_open_day');
+    const closeDayInput = document.getElementById('id_close_day');
+
+    // Массив всех дней недели
+    const allDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+    // Установка начальных значений из input
+    function initializeButtons() {
+      if (openDayInput.value) {
+        const selectedOpenDays = openDayInput.value.split(',').map(day => day.trim());
+        openDayButtons.forEach(btn => {
+          if (selectedOpenDays.includes(btn.dataset.day)) {
+            btn.classList.add('active');
+          }
+        });
+      }
+
+      if (closeDayInput.value) {
+        const selectedCloseDays = closeDayInput.value.split(',').map(day => day.trim());
+        closeDayButtons.forEach(btn => {
+          if (selectedCloseDays.includes(btn.dataset.day)) {
+            btn.classList.add('active');
+          }
+        });
+      } else {
+        // Если дни закрытия не заданы, автоматически вычисляем их
+        updateCloseDaysFromOpenDays();
+      }
+    }
+
+    // Обновление дней закрытия на основе дней открытия
+    function updateCloseDaysFromOpenDays() {
+      // Получаем выбранные дни открытия
+      const selectedOpenDays = [];
+      openDayButtons.forEach(btn => {
+        if (btn.classList.contains('active')) {
+          selectedOpenDays.push(btn.dataset.day);
+        }
+      });
+
+      // Вычисляем дни закрытия (все дни минус дни открытия)
+      const closeDays = allDays.filter(day => !selectedOpenDays.includes(day));
+
+      // Обновляем кнопки дней закрытия
+      closeDayButtons.forEach(btn => {
+        if (closeDays.includes(btn.dataset.day)) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // Обновляем скрытое поле
+      closeDayInput.value = closeDays.join(', ');
+    }
+
+    // Обновление дней открытия на основе дней закрытия
+    function updateOpenDaysFromCloseDays() {
+      // Получаем выбранные дни закрытия
+      const selectedCloseDays = [];
+      closeDayButtons.forEach(btn => {
+        if (btn.classList.contains('active')) {
+          selectedCloseDays.push(btn.dataset.day);
+        }
+      });
+
+      // Вычисляем дни открытия (все дни минус дни закрытия)
+      const openDays = allDays.filter(day => !selectedCloseDays.includes(day));
+
+      // Обновляем кнопки дней открытия
+      openDayButtons.forEach(btn => {
+        if (openDays.includes(btn.dataset.day)) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // Обновляем скрытое поле
+      openDayInput.value = openDays.join(', ');
+    }
+
+    // Обработчик клика по кнопкам дней открытия
+    openDayButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        this.classList.toggle('active');
+
+        // Обновляем скрытое поле дней открытия
+        const selectedOpenDays = [];
+        openDayButtons.forEach(btn => {
+          if (btn.classList.contains('active')) {
+            selectedOpenDays.push(btn.dataset.day);
+          }
+        });
+        openDayInput.value = selectedOpenDays.join(', ');
+
+        // Автоматически обновляем дни закрытия
+        updateCloseDaysFromOpenDays();
+      });
+    });
+
+    // Обработчик клика по кнопкам дней закрытия
+    closeDayButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        this.classList.toggle('active');
+
+        // Обновляем скрытое поле дней закрытия
+        const selectedCloseDays = [];
+        closeDayButtons.forEach(btn => {
+          if (btn.classList.contains('active')) {
+            selectedCloseDays.push(btn.dataset.day);
+          }
+        });
+        closeDayInput.value = selectedCloseDays.join(', ');
+
+        // Автоматически обновляем дни открытия
+        updateOpenDaysFromCloseDays();
+      });
+    });
+
+    // Инициализация
+    initializeButtons();
+  }
 </script>
+
+<style>
+  /* Стили для JSON редактора */
+  #json-editor {
+    height: 250px;
+    width: 100%;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 1px solid #333;
+    transition: border-color 0.3s;
+  }
+
+  #json-editor:focus-within {
+    border-color: #4a6cf7;
+    box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.25);
+  }
+
+  /* Стили для IP-адреса */
+  .ip-input-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .ip-segment {
+    width: 60px;
+    text-align: center;
+    font-family: monospace;
+  }
+
+  .ip-dot {
+    margin: 0 5px;
+    font-weight: bold;
+  }
+
+  /* Стили для переключателей */
+  .form-switch .form-check-input {
+    width: 3em;
+    height: 1.5em;
+    margin-top: 0;
+    cursor: pointer;
+  }
+
+  .form-check-input:checked {
+    background-color: #4a6cf7;
+    border-color: #4a6cf7;
+  }
+
+  .form-check-label {
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* Стили для календаря */
+  .calendar-section {
+    background-color: #2c3034;
+    border: 1px solid #343a40;
+    transition: all 0.3s ease;
+  }
+
+  .exception-section {
+    background-color: #212529;
+    border: 1px solid #343a40;
+  }
+
+  /* Стили для селектора дней */
+  .day-selector {
+    margin-top: 0.5rem;
+  }
+
+  .day-selector .btn-group {
+    gap: 5px;
+  }
+
+  .day-btn {
+    flex: 1;
+    min-width: 40px;
+    margin-bottom: 5px;
+    border-radius: 4px !important;
+  }
+
+  .day-btn.active {
+    background-color: #4a6cf7;
+    border-color: #4a6cf7;
+    color: white;
+  }
+
+  #close-day-selector .day-btn.active {
+    background-color: #dc3545;
+    border-color: #dc3545;
+  }
+
+  /* Стили для выбора даты */
+  .date-picker-container {
+    position: relative;
+  }
+
+  .date-picker-container .input-group-text {
+    background-color: #4a6cf7;
+    color: white;
+    border-color: #4a6cf7;
+    cursor: pointer;
+  }
+
+  /* Стили для flatpickr */
+  .flatpickr-calendar {
+    background: #2c3034;
+    border-color: #343a40;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .flatpickr-day {
+    color: #e9ecef;
+  }
+
+  .flatpickr-day.selected {
+    background: #4a6cf7;
+    border-color: #4a6cf7;
+  }
+
+  .flatpickr-day:hover {
+    background: #343a40;
+  }
+
+  .flatpickr-months .flatpickr-month,
+  .flatpickr-current-month .flatpickr-monthDropdown-months,
+  .flatpickr-weekdays,
+  span.flatpickr-weekday {
+    background: #212529;
+    color: #e9ecef;
+  }
+
+  .flatpickr-day.today {
+    border-color: #4a6cf7;
+  }
+
+  .flatpickr-day.today:hover,
+  .flatpickr-day.today:focus {
+    background: #4a6cf7;
+    border-color: #4a6cf7;
+    color: white;
+  }
+</style>
+
 {% endblock %}

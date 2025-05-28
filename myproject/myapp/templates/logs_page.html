@@ -1,0 +1,1449 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block title %}Системные логи{% endblock %}
+
+{% block content %}
+<div class="logs-dashboard">
+  <div class="container-fluid p-0">
+    <!-- Заголовок и информация -->
+    <div class="header-panel bg-dark text-light p-3 mb-3 rounded shadow d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-journal-code me-2 fs-4"></i>
+        <h1 class="mb-0 fs-4">Системные логи</h1>
+      </div>
+      <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center me-3">
+          <span class="me-2">Всего:</span>
+          <span id="logCount" class="badge bg-primary">0</span>
+        </div>
+        <div class="dropdown me-2">
+          <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="viewModeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-grid-3x3-gap-fill me-1"></i> Вид
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="viewModeDropdown">
+            <li><a class="dropdown-item active" href="#" data-view="grid"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Сетка</a></li>
+            <li><a class="dropdown-item" href="#" data-view="list"><i class="bi bi-list-ul me-2"></i>Список</a></li>
+            <li><a class="dropdown-item" href="#" data-view="compact"><i class="bi bi-layout-text-window-reverse me-2"></i>Компактный</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Навигация по типам логов (вкладки) -->
+    <ul class="nav nav-tabs mb-3" id="logsTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="system-logs-tab" data-bs-toggle="tab" data-bs-target="#system-logs" type="button" role="tab" aria-controls="system-logs" aria-selected="true">
+          <i class="bi bi-braces-asterisk me-1"></i>Системные логи
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="user-logs-tab" data-bs-toggle="tab" data-bs-target="#user-logs" type="button" role="tab" aria-controls="user-logs" aria-selected="false">
+          <i class="bi bi-person-fill me-1"></i>Логи пользователей
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="device-logs-tab" data-bs-toggle="tab" data-bs-target="#device-logs" type="button" role="tab" aria-controls="device-logs" aria-selected="false">
+          <i class="bi bi-devices me-1"></i>Логи парковки
+        </button>
+      </li>
+    </ul>
+
+    <!-- Содержимое вкладок -->
+    <div class="tab-content" id="logsTabContent">
+      <!-- Системные логи -->
+      <div class="tab-pane fade show active" id="system-logs" role="tabpanel" aria-labelledby="system-logs-tab">
+        <!-- Панель фильтров -->
+        <div class="filter-panel bg-dark border-secondary p-3 mb-3 rounded">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-light">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input type="text" id="systemLogSearch" class="form-control bg-dark border-secondary text-light" placeholder="Поиск по логам...">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-light">
+                  <i class="bi bi-building"></i>
+                </span>
+                <input type="text" id="systemAuditoryFilter" class="form-control bg-dark border-secondary text-light" placeholder="Номер аудитории...">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <select id="systemSortOption" class="form-select bg-dark border-secondary text-light">
+                <option value="datetime-desc">Время (новые сверху)</option>
+                <option value="datetime-asc">Время (старые сверху)</option>
+                <option value="auditory_number-asc">Аудитория (А-Я)</option>
+                <option value="auditory_number-desc">Аудитория (Я-А)</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button id="resetSystemLogFilters" class="btn btn-outline-danger w-100">
+                <i class="bi bi-x-circle me-1"></i>Сбросить
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Контейнер для логов -->
+        <div class="logs-container bg-dark p-3 rounded">
+          <!-- Индикатор загрузки -->
+          <div id="systemLogsLoadingIndicator" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="mt-3">Загрузка логов...</p>
+          </div>
+
+          <!-- Сообщение об отсутствии логов -->
+          <div id="systemLogsEmptyMessage" class="text-center py-5 d-none">
+            <i class="bi bi-exclamation-circle text-warning fs-1"></i>
+            <p class="mt-3 fs-5">Логи не найдены</p>
+            <p class="text-muted">Попробуйте изменить параметры фильтрации</p>
+          </div>
+
+          <!-- Сетка для логов -->
+          <div id="systemLogsGrid" class="logs-grid"></div>
+        </div>
+
+        <!-- Пагинация -->
+        <div class="pagination-panel bg-dark border-top border-secondary p-2 d-flex justify-content-between align-items-center mt-3 rounded">
+          <div class="d-flex align-items-center">
+            <select id="systemLogsPerPage" class="form-select form-select-sm bg-dark border-secondary text-light me-2" style="width: 70px;">
+              <option value="15">15</option>
+              <option value="24">24</option>
+              <option value="48">48</option>
+              <option value="96">96</option>
+            </select>
+            <span class="text-light">записей на странице</span>
+          </div>
+          <nav aria-label="Навигация по логам">
+            <ul class="pagination pagination-sm mb-0" id="systemLogsPagination">
+              <!-- Пагинация будет добавлена через JavaScript -->
+            </ul>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Логи пользователей -->
+      <div class="tab-pane fade" id="user-logs" role="tabpanel" aria-labelledby="user-logs-tab">
+        <!-- Панель фильтров -->
+        <div class="filter-panel bg-dark border-secondary p-3 mb-3 rounded">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-light">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input type="text" id="userLogSearch" class="form-control bg-dark border-secondary text-light" placeholder="Поиск по логам...">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-light">
+                  <i class="bi bi-person"></i>
+                </span>
+                <input type="text" id="userFilter" class="form-control bg-dark border-secondary text-light" placeholder="Имя пользователя...">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <select id="userSortOption" class="form-select bg-dark border-secondary text-light">
+                <option value="datetime-desc">Время (новые сверху)</option>
+                <option value="datetime-asc">Время (старые сверху)</option>
+                <option value="username-asc">Пользователь (А-Я)</option>
+                <option value="username-desc">Пользователь (Я-А)</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button id="resetUserLogFilters" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-x-circle me-1"></i>Сбросить
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Контейнер для логов -->
+        <div class="logs-container bg-dark p-3 rounded">
+          <!-- Индикатор загрузки -->
+          <div id="userLogsLoadingIndicator" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="mt-3">Загрузка логов...</p>
+          </div>
+
+          <!-- Сообщение об отсутствии логов -->
+          <div id="userLogsEmptyMessage" class="text-center py-5 d-none">
+            <i class="bi bi-exclamation-circle text-warning fs-1"></i>
+            <p class="mt-3 fs-5">Логи не найдены</p>
+            <p class="text-muted">Попробуйте изменить параметры фильтрации</p>
+          </div>
+
+          <!-- Сетка для логов -->
+          <div id="userLogsGrid" class="logs-grid"></div>
+        </div>
+
+        <!-- Пагинация -->
+        <div class="pagination-panel bg-dark border-top border-secondary p-2 d-flex justify-content-between align-items-center mt-3 rounded">
+          <div class="d-flex align-items-center">
+            <select id="userLogsPerPage" class="form-select form-select-sm bg-dark border-secondary text-light me-2" style="width: 70px;">
+              <option value="15">15</option>
+              <option value="24">24</option>
+              <option value="48">48</option>
+              <option value="96">96</option>
+            </select>
+            <span class="text-light">записей на странице</span>
+          </div>
+          <nav aria-label="Навигация по логам">
+            <ul class="pagination pagination-sm mb-0" id="userLogsPagination">
+              <!-- Пагинация будет добавлена через JavaScript -->
+            </ul>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Логи устройств -->
+      <div class="tab-pane fade" id="device-logs" role="tabpanel" aria-labelledby="device-logs-tab">
+        <!-- Панель фильтров -->
+        <div class="filter-panel bg-dark border-secondary p-3 mb-3 rounded">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-light">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input type="text" id="deviceLogSearch" class="form-control bg-dark border-secondary text-light" placeholder="Поиск по логам...">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-light">
+                  <i class="bi bi-laptop"></i>
+                </span>
+                <input type="text" id="deviceFilter" class="form-control bg-dark border-secondary text-light" placeholder="ID устройства...">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <select id="deviceSortOption" class="form-select bg-dark border-secondary text-light">
+                <option value="datetime-desc">Время (новые сверху)</option>
+                <option value="datetime-asc">Время (старые сверху)</option>
+                <option value="device_id-asc">Устройство (А-Я)</option>
+                <option value="device_id-desc">Устройство (Я-А)</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button id="resetDeviceLogFilters" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-x-circle me-1"></i>Сбросить
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Контейнер для логов -->
+        <div class="logs-container bg-dark p-3 rounded">
+          <!-- Индикатор загрузки -->
+          <div id="deviceLogsLoadingIndicator" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="mt-3">Загрузка логов...</p>
+          </div>
+
+          <!-- Сообщение об отсутствии логов -->
+          <div id="deviceLogsEmptyMessage" class="text-center py-5 d-none">
+            <i class="bi bi-exclamation-circle text-warning fs-1"></i>
+            <p class="mt-3 fs-5">Логи не найдены</p>
+            <p class="text-muted">Попробуйте изменить параметры фильтрации</p>
+          </div>
+
+          <!-- Сетка для логов -->
+          <div id="deviceLogsGrid" class="logs-grid"></div>
+        </div>
+
+        <!-- Пагинация -->
+        <div class="pagination-panel bg-dark border-top border-secondary p-2 d-flex justify-content-between align-items-center mt-3 rounded">
+          <div class="d-flex align-items-center">
+            <select id="deviceLogsPerPage" class="form-select form-select-sm bg-dark border-secondary text-light me-2" style="width: 70px;">
+              <option value="15">15</option>
+              <option value="24">24</option>
+              <option value="48">48</option>
+              <option value="96">96</option>
+            </select>
+            <span class="text-light">записей на странице</span>
+          </div>
+          <nav aria-label="Навигация по логам">
+            <ul class="pagination pagination-sm mb-0" id="deviceLogsPagination">
+              <!-- Пагинация будет добавлена через JavaScript -->
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для отображения деталей лога -->
+<div class="modal fade" id="logDetailModal" tabindex="-1" aria-labelledby="logDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-light">
+      <div class="modal-header border-bottom border-secondary">
+        <h5 class="modal-title" id="logDetailModalLabel">Детали лога</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">ID:</label>
+          <div id="logDetailId" class="form-control bg-dark text-light"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Время:</label>
+          <div id="logDetailTime" class="form-control bg-dark text-light"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Аудитория:</label>
+          <div id="logDetailAuditory" class="form-control bg-dark text-light"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Сообщение:</label>
+          <div id="logDetailMessage" class="form-control bg-dark text-light" style="min-height: 100px; white-space: pre-wrap;"></div>
+        </div>
+      </div>
+      <div class="modal-footer border-top border-secondary">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+        {% if perms.myapp.add_сustomuser %}
+        <button type="button" class="btn btn-danger" id="deleteLogBtn">Удалить</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const userCanDeleteLogs = {% if perms.myapp.delete_systemlog %}true{% else %}false{% endif %};
+    // Объект для хранения состояния каждой вкладки
+    const tabStates = {
+      system: {
+        currentPage: 1,
+        totalPages: 1,
+        logsPerPage: 15,
+        currentSort: 'datetime',
+        sortDirection: 'desc',
+        currentSearch: '',
+        currentFilter: '',
+        currentViewMode: 'grid',
+        logType: 'system'
+      },
+      user: {
+        currentPage: 1,
+        totalPages: 1,
+        logsPerPage: 15,
+        currentSort: 'datetime',
+        sortDirection: 'desc',
+        currentSearch: '',
+        currentFilter: '',
+        currentViewMode: 'grid',
+        logType: 'user'
+      },
+      device: {
+        currentPage: 1,
+        totalPages: 1,
+        logsPerPage: 15,
+        currentSort: 'datetime',
+        sortDirection: 'desc',
+        currentSearch: '',
+        currentFilter: '',
+        currentViewMode: 'grid',
+        logType: 'device'
+      }
+    };
+
+    let currentLogId = null;
+    let activeTab = 'system'; // По умолчанию активна вкладка системных логов
+
+    // Функция для форматирования даты
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+
+      // Получаем компоненты даты
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+
+      // Получаем время
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+
+      // Форматируем дату в нужный формат
+      return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // Функция debounce для предотвращения частых запросов при вводе в поле поиска
+    function debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    // Функция для проверки существования элемента
+    function elementExists(id) {
+      return document.getElementById(id) !== null;
+    }
+
+    // Инициализация обработчиков событий для вкладок
+    function initTabEventHandlers() {
+      // Обработчик переключения вкладок
+      document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(function(tab) {
+        tab.addEventListener('shown.bs.tab', function(event) {
+          // Определяем активную вкладку
+          const tabId = event.target.getAttribute('id');
+          if (tabId === 'system-logs-tab') {
+            activeTab = 'system';
+          } else if (tabId === 'user-logs-tab') {
+            activeTab = 'user';
+          } else if (tabId === 'device-logs-tab') {
+            activeTab = 'device';
+          }
+
+          // Загружаем логи для активной вкладки
+          loadLogs(activeTab);
+        });
+      });
+
+      // Инициализация обработчиков для системных логов
+      initLogTabHandlers('system');
+
+      // Инициализация обработчиков для логов пользователей
+      initLogTabHandlers('user');
+
+      // Инициализация обработчиков для логов устройств
+      initLogTabHandlers('device');
+
+      // Обработчик для кнопки удаления в модальном окне деталей
+      if (elementExists('deleteLogBtn')) {
+        document.getElementById('deleteLogBtn').addEventListener('click', function() {
+          if (currentLogId) {
+            deleteLog(currentLogId, activeTab);
+            // Закрываем модальное окно
+            if (elementExists('logDetailModal')) {
+              const logDetailModal = bootstrap.Modal.getInstance(document.getElementById('logDetailModal'));
+              if (logDetailModal) logDetailModal.hide();
+            }
+          }
+        });
+      }
+
+      // Обработчики для переключения режима отображения
+      document.querySelectorAll('[data-view]').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+          e.preventDefault();
+
+          // Удаляем активный класс у всех элементов
+          document.querySelectorAll('[data-view]').forEach(el => {
+            el.classList.remove('active');
+          });
+
+          // Добавляем активный класс текущему элементу
+          this.classList.add('active');
+
+          // Устанавливаем режим отображения для активной вкладки
+          tabStates[activeTab].currentViewMode = this.getAttribute('data-view');
+
+          // Обновляем отображение логов
+          updateViewMode(activeTab);
+        });
+      });
+    }
+
+    // Инициализация обработчиков для конкретной вкладки
+    function initLogTabHandlers(tabType) {
+      // Обработчики событий для фильтров
+      if (elementExists(`${tabType}LogSearch`)) {
+        document.getElementById(`${tabType}LogSearch`).addEventListener('input', debounce(function() {
+          tabStates[tabType].currentSearch = this.value;
+          tabStates[tabType].currentPage = 1;
+          loadLogs(tabType);
+        }, 300));
+      }
+
+      // Обработчик для фильтра (аудитория, пользователь или устройство)
+      const filterElementId = tabType === 'system' ? `${tabType}AuditoryFilter` : `${tabType}Filter`;
+      if (elementExists(filterElementId)) {
+        document.getElementById(filterElementId).addEventListener('input', debounce(function() {
+          tabStates[tabType].currentFilter = this.value;
+          tabStates[tabType].currentPage = 1;
+          loadLogs(tabType);
+        }, 300));
+      }
+
+      // Обработчик для сброса фильтров
+      if (elementExists(`reset${tabType.charAt(0).toUpperCase() + tabType.slice(1)}LogFilters`)) {
+        document.getElementById(`reset${tabType.charAt(0).toUpperCase() + tabType.slice(1)}LogFilters`).addEventListener('click', function() {
+          if (elementExists(`${tabType}LogSearch`)) document.getElementById(`${tabType}LogSearch`).value = '';
+          if (elementExists(filterElementId)) document.getElementById(filterElementId).value = '';
+          tabStates[tabType].currentSearch = '';
+          tabStates[tabType].currentFilter = '';
+          tabStates[tabType].currentPage = 1;
+          loadLogs(tabType);
+        });
+      }
+
+      // Обработчик для выбора количества записей на странице
+      if (elementExists(`${tabType}LogsPerPage`)) {
+        document.getElementById(`${tabType}LogsPerPage`).addEventListener('change', function() {
+          tabStates[tabType].logsPerPage = parseInt(this.value);
+          tabStates[tabType].currentPage = 1;
+          loadLogs(tabType);
+        });
+      }
+
+      // Обработчик для выбора сортировки
+      if (elementExists(`${tabType}SortOption`)) {
+        document.getElementById(`${tabType}SortOption`).addEventListener('change', function() {
+          const sortOption = this.value.split('-');
+          tabStates[tabType].currentSort = sortOption[0];
+          tabStates[tabType].sortDirection = sortOption[1];
+          tabStates[tabType].currentPage = 1;
+          loadLogs(tabType);
+        });
+      }
+    }
+
+    // Функция для обновления режима отображения
+    function updateViewMode(tabType) {
+      const logsGridId = `${tabType}LogsGrid`;
+      if (!elementExists(logsGridId)) return;
+
+      const logsGrid = document.getElementById(logsGridId);
+
+      // Удаляем все классы режимов отображения
+      logsGrid.classList.remove('view-grid', 'view-list', 'view-compact');
+
+      // Добавляем класс текущего режима отображения
+      logsGrid.classList.add(`view-${tabStates[tabType].currentViewMode}`);
+    }
+
+    // Функция для загрузки логов
+    function loadLogs(tabType) {
+      const logsGridId = `${tabType}LogsGrid`;
+      const loadingIndicatorId = `${tabType}LogsLoadingIndicator`;
+      const emptyMessageId = `${tabType}LogsEmptyMessage`;
+
+      if (!elementExists(logsGridId) || !elementExists(loadingIndicatorId) || !elementExists(emptyMessageId)) return;
+
+      const logsGrid = document.getElementById(logsGridId);
+      const loadingIndicator = document.getElementById(loadingIndicatorId);
+      const emptyMessage = document.getElementById(emptyMessageId);
+
+      // Показываем индикатор загрузки
+      logsGrid.innerHTML = '';
+      loadingIndicator.classList.remove('d-none');
+      emptyMessage.classList.add('d-none');
+
+      // Получаем состояние вкладки
+      const state = tabStates[tabType];
+
+      // Формируем параметры запроса
+      const params = new URLSearchParams({
+        page: state.currentPage,
+        per_page: state.logsPerPage,
+        sort: state.currentSort,
+        direction: state.sortDirection,
+        search: state.currentSearch,
+        filter: state.currentFilter,
+        log_type: state.logType
+      });
+
+      // Отправляем запрос на сервер
+      fetch(`/logs/api/${tabType}/?${params.toString()}`)
+              .then(response => response.json())
+              .then(data => {
+                // Скрываем индикатор загрузки
+                loadingIndicator.classList.add('d-none');
+
+                // Обновляем счетчик логов
+                if (elementExists('logCount')) {
+                  document.getElementById('logCount').textContent = data.total_count || 0;
+                }
+
+                // Обновляем пагинацию
+                state.totalPages = data.total_pages || 1;
+                updatePagination(tabType);
+
+                // Если логи не найдены
+                if (!data.logs || data.logs.length === 0) {
+                  emptyMessage.classList.remove('d-none');
+                  return;
+                }
+
+                // Отображаем логи
+                data.logs.forEach(log => {
+                  const logCard = createLogCard(log, tabType);
+                  logsGrid.appendChild(logCard);
+                });
+
+                // Обновляем режим отображения
+                updateViewMode(tabType);
+              })
+              .catch(error => {
+                console.error('Ошибка при загрузке логов:', error);
+                loadingIndicator.classList.add('d-none');
+                emptyMessage.classList.remove('d-none');
+                emptyMessage.innerHTML = `
+            <i class="bi bi-exclamation-circle text-danger fs-1"></i>
+            <p class="mt-3 fs-5">Ошибка при загрузке логов</p>
+            <p class="text-muted">Попробуйте обновить страницу</p>
+          `;
+              });
+    }
+
+    // Функция для создания карточки лога
+    function createLogCard(log, tabType) {
+      // Создаем элемент карточки
+      const logCardDiv = document.createElement('div');
+      logCardDiv.className = 'log-card';
+      logCardDiv.setAttribute('data-log-id', log.id);
+      logCardDiv.setAttribute('data-log-type', tabType);
+
+      const formattedDate = formatDate(log.datetime);
+
+      let deleteButtonHtml = '';
+      if (userCanDeleteLogs) {
+        deleteButtonHtml = `
+        <button class="btn btn-sm btn-outline-danger delete-log" title="Удалить">
+          <i class="bi bi-trash"></i>
+        </button>
+      `;
+      }
+      // Определяем тип бейджа и его содержимое
+      let userBadge = '';
+      let auditoryBadge = '';
+
+      if (tabType === 'system') {
+        if (log.message && log.message.includes('[MSG]')) {
+          auditoryBadge = `<div class="badge-pill nid-badge"><i class="bi bi-chat-left-text me-1"></i>НИД</div>`;
+        } else {
+          let roomCode = log.auditory_number || 'Н/Д';
+          auditoryBadge = `<div class="badge-pill auditory-badge"><i class="bi bi-building me-1"></i>${roomCode}</div>`;
+        }
+      } else if (tabType === 'user') {
+        // Добавляем бейдж пользователя с классом single-line для отображения в одну строку
+        userBadge = `<div class="badge-pill user-badge single-line" title="${log.username || `UID: ${log.uid_card}` || 'Н/Д'}"><i class="bi bi-person me-1"></i>${log.username || `UID: ${log.uid_card}` || 'Н/Д'}</div>`;
+      } else if (tabType === 'device') {
+        auditoryBadge = `<div class="badge-pill device-badge"><i class="bi bi-laptop me-1"></i>${log.device_id || 'Н/Д'}</div>`;
+
+        // Если есть имя пользователя, добавляем его как второй бейдж
+        if (log.username) {
+          userBadge = `<div class="badge-pill user-badge single-line" title="${log.username}"><i class="bi bi-person me-1"></i>${log.username}</div>`;
+        }
+      }
+
+      // Преобразуем сообщение в более понятный формат
+      let messageContent = '';
+      let message = log.message || log.action || '';
+
+      // Преобразуем сообщения для логов пользователей
+      if (tabType === 'user') {
+        message = formatUserMessage(message, log);
+      }
+
+      // Парсим сообщение для выделения части в квадратных скобках
+      const tagMatch = message.match(/^\[(.*?)\]/);
+
+      if (tagMatch) {
+        const tag = tagMatch[0]; // Полное совпадение с квадратными скобками
+        const tagType = tagMatch[1]; // Содержимое внутри скобок
+        const restOfMessage = message.substring(tag.length).trim();
+
+        // Определяем класс для тега в зависимости от его содержимого
+        let tagClass = 'log-tag-default';
+        if (tagType === 'ACTION') tagClass = 'log-tag-action';
+        if (tagType === 'MSG') tagClass = 'log-tag-message';
+        if (tagType === 'ERROR') tagClass = 'log-tag-error';
+        if (tagType === 'WARNING') tagClass = 'log-tag-warning';
+
+        // Формируем HTML для сообщения с выделенным тегом
+        messageContent = `
+      <div class="message-with-tag">
+        <span class="${tagClass}">${tag}</span>
+        <span class="message-content">${restOfMessage}</span>
+      </div>
+    `;
+      } else {
+        // Если тег не найден, отображаем сообщение как есть
+        messageContent = `<div class="message-text">${message}</div>`;
+      }
+
+      // Заполняем содержимое карточки
+      logCardDiv.innerHTML = `
+    <div class="card-header">
+      <div class="time-badge">
+        <i class="bi bi-clock"></i>
+        <span>${formattedDate}</span>
+      </div>
+      <div class="badge-group">
+        ${userBadge}
+        ${auditoryBadge}
+      </div>
+    </div>
+    <div class="card-body">
+      ${messageContent}
+    </div>
+    <div class="card-footer">
+      <div class="action-buttons">
+        <button class="btn btn-sm btn-outline-primary view-log-details" title="Просмотр">
+          <i class="bi bi-eye"></i>
+        </button>
+        ${deleteButtonHtml}
+      </div>
+    </div>
+  `;
+
+      const deleteButton = logCardDiv.querySelector('.delete-log');
+      if (deleteButton) {
+        deleteButton.addEventListener('click', function(e) {
+          e.stopPropagation();
+          deleteLog(log.id, tabType);
+        });
+      }
+
+      // Добавляем обработчики событий
+      logCardDiv.querySelector('.view-log-details').addEventListener('click', function(e) {
+        e.stopPropagation();
+        showLogDetails(log.id, tabType);
+      });
+
+      //logCardDiv.querySelector('.delete-log').addEventListener('click', function(e) {
+      //  e.stopPropagation();
+      //  deleteLog(log.id, tabType);
+      //});
+
+      // Добавляем обработчик для клика по карточке
+      logCardDiv.addEventListener('click', function() {
+        showLogDetails(log.id, tabType);
+      });
+
+      return logCardDiv;
+    }
+
+    function formatUserMessage(message, log) {
+      console.log('Форматирование сообщения:', message);
+      console.log('Тип сообщения:', typeof message);
+      console.log('Длина сообщения:', message ? message.length : 0);
+      console.log('Коды символов:', message ? Array.from(message).map(c => c.charCodeAt(0)) : []);
+
+      // Убедимся, что message - строка и очистим её от пробелов
+      if (!message) return '';
+
+      const cleanMessage = message.toString().trim().toLowerCase();
+      console.log('Очищенное сообщение:', cleanMessage);
+
+      // Проверяем точное соответствие после очистки
+      if (cleanMessage === 'open') {
+        console.log('Сработало условие для open');
+        return `Открыл аудиторию ${log.auditory_number || 'Н/Д'}`;
+      } else if (cleanMessage === 'close') {
+        return `Закрыл аудиторию ${log.auditory_number || 'Н/Д'}`;
+      } else if (cleanMessage === 'take') {
+        return `Взял ключ от аудитории ${log.auditory_number || 'Н/Д'}`;
+      } else if (cleanMessage === 'return') {
+        return `Вернул ключ от аудитории ${log.auditory_number || 'Н/Д'}`;
+      } else if (cleanMessage.includes('login')) {
+        return `Вошел в систему`;
+      } else if (cleanMessage.includes('logout')) {
+        return `Вышел из системы`;
+      }
+
+      // Если сообщение не подходит под шаблоны, возвращаем исходное
+      return message;
+    }
+
+      // Функция для обновления пагинации
+      function updatePagination(tabType) {
+        const paginationId = `${tabType}LogsPagination`;
+        if (!elementExists(paginationId)) return;
+
+        const pagination = document.getElementById(paginationId);
+        pagination.innerHTML = '';
+
+        // Получаем состояние вкладки
+        const state = tabStates[tabType];
+
+        // Кнопка "Предыдущая"
+        const prevButton = document.createElement('li');
+        prevButton.className = `page-item ${state.currentPage === 1 ? 'disabled' : ''}`;
+        prevButton.innerHTML = `
+        <a class="page-link" href="#" aria-label="Предыдущая">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      `;
+        if (state.currentPage > 1) {
+          prevButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            state.currentPage--;
+            loadLogs(tabType);
+          });
+        }
+        pagination.appendChild(prevButton);
+
+        // Определяем диапазон страниц для отображения
+        let startPage = Math.max(1, state.currentPage - 2);
+        let endPage = Math.min(state.totalPages, startPage + 4);
+
+        // Корректируем начальную страницу, если не хватает страниц в конце
+        if (endPage - startPage < 4) {
+          startPage = Math.max(1, endPage - 4);
+        }
+
+        // Кнопка для первой страницы
+        if (startPage > 1) {
+          const firstPageButton = document.createElement('li');
+          firstPageButton.className = 'page-item';
+          firstPageButton.innerHTML = `
+          <a class="page-link" href="#">1</a>
+        `;
+          firstPageButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            state.currentPage = 1;
+            loadLogs(tabType);
+          });
+          pagination.appendChild(firstPageButton);
+
+          // Добавляем многоточие, если нужно
+          if (startPage > 2) {
+            const ellipsis = document.createElement('li');
+            ellipsis.className = 'page-item disabled';
+            ellipsis.innerHTML = `
+            <a class="page-link" href="#">...</a>
+          `;
+            pagination.appendChild(ellipsis);
+          }
+        }
+
+        // Генерируем кнопки для страниц
+        for (let i = startPage; i <= endPage; i++) {
+          const pageButton = document.createElement('li');
+          pageButton.className = `page-item ${i === state.currentPage ? 'active' : ''}`;
+          pageButton.innerHTML = `
+          <a class="page-link" href="#">${i}</a>
+        `;
+
+          if (i !== state.currentPage) {
+            pageButton.addEventListener('click', function(e) {
+              e.preventDefault();
+              state.currentPage = i;
+              loadLogs(tabType);
+            });
+          }
+
+          pagination.appendChild(pageButton);
+        }
+
+        // Добавляем многоточие и последнюю страницу, если нужно
+        if (endPage < state.totalPages) {
+          if (endPage < state.totalPages - 1) {
+            const ellipsis = document.createElement('li');
+            ellipsis.className = 'page-item disabled';
+            ellipsis.innerHTML = `
+            <a class="page-link" href="#">...</a>
+          `;
+            pagination.appendChild(ellipsis);
+          }
+
+          const lastPageButton = document.createElement('li');
+          lastPageButton.className = 'page-item';
+          lastPageButton.innerHTML = `
+          <a class="page-link" href="#">${state.totalPages}</a>
+        `;
+          lastPageButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            state.currentPage = state.totalPages;
+            loadLogs(tabType);
+          });
+          pagination.appendChild(lastPageButton);
+        }
+
+        // Кнопка "Следующая"
+        const nextButton = document.createElement('li');
+        nextButton.className = `page-item ${state.currentPage === state.totalPages ? 'disabled' : ''}`;
+        nextButton.innerHTML = `
+        <a class="page-link" href="#" aria-label="Следующая">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      `;
+        if (state.currentPage < state.totalPages) {
+          nextButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            state.currentPage++;
+            loadLogs(tabType);
+          });
+        }
+        pagination.appendChild(nextButton);
+      }
+
+      // Функция для отображения деталей лога
+      function showLogDetails(logId, logType) {
+        currentLogId = logId;
+
+        fetch(`/logs/api/detail/?id=${logId}&log_type=${logType}`)
+                .then(response => response.json())
+                .then(data => {
+                  if (data.success && data.log) {
+                    const log = data.log;
+
+                    // Форматируем дату
+                    const formattedDate = formatDate(log.datetime);
+
+                    // Заполняем модальное окно данными
+                    if (elementExists('logDetailId')) document.getElementById('logDetailId').textContent = log.id;
+                    if (elementExists('logDetailTime')) document.getElementById('logDetailTime').textContent = formattedDate;
+
+                    // Отображаем аудиторию, если она есть
+                    if (elementExists('logDetailAuditory')) {
+                      if (log.auditory_number) {
+                        document.getElementById('logDetailAuditory').parentElement.style.display = '';
+                        document.getElementById('logDetailAuditory').textContent = log.auditory_number;
+                      } else {
+                        document.getElementById('logDetailAuditory').parentElement.style.display = 'none';
+                      }
+                    }
+
+                    // Получаем сообщение и форматируем его, если это лог пользователя
+                    let message = log.message || log.action || '';
+                    if (logType === 'user') {
+                      message = formatUserMessage(message, log);
+                    }
+
+                    // Парсим сообщение для выделения части в квадратных скобках
+                    const tagMatch = message.match(/^\[(.*?)\]/);
+
+                    if (elementExists('logDetailMessage')) {
+                      if (tagMatch) {
+                        const tag = tagMatch[0]; // Полное совпадение с квадратными скобками
+                        const tagType = tagMatch[1]; // Содержимое внутри скобок
+                        const restOfMessage = message.substring(tag.length).trim();
+
+                        // Определяем класс для тега в зависимости от его содержимого
+                        let tagClass = 'log-tag-default';
+                        if (tagType === 'ACTION') tagClass = 'log-tag-action';
+                        if (tagType === 'MSG') tagClass = 'log-tag-message';
+                        if (tagType === 'ERROR') tagClass = 'log-tag-error';
+                        if (tagType === 'WARNING') tagClass = 'log-tag-warning';
+
+                        // Формируем HTML для сообщения с выделенным тегом
+                        document.getElementById('logDetailMessage').innerHTML = `
+                  <div class="message-with-tag">
+                    <span class="${tagClass}">${tag}</span>
+                    <span class="message-content">${restOfMessage}</span>
+                  </div>
+                `;
+                      } else {
+                        document.getElementById('logDetailMessage').textContent = message;
+                      }
+                    }
+
+                    // Открываем модальное окно
+                    if (elementExists('logDetailModal')) {
+                      const logDetailModal = new bootstrap.Modal(document.getElementById('logDetailModal'));
+                      logDetailModal.show();
+                    } else {
+                      console.error('Модальное окно logDetailModal не найдено');
+                      showNotification('Ошибка: модальное окно для деталей лога не найдено', 'error');
+                    }
+                  } else {
+                    showNotification('Не удалось загрузить детали лога', 'error');
+                  }
+                })
+                .catch(error => {
+                  console.error('Ошибка при загрузке деталей лога:', error);
+                  showNotification('Произошла ошибка при загрузке деталей лога', 'error');
+                });
+      }
+
+      // Функция для удаления лога
+      function deleteLog(logId, logType) {
+        if (confirm('Вы уверены, что хотите удалить этот лог?')) {
+          fetch(`/logs/api/delete/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ id: logId, log_type: logType })
+          })
+                  .then(response => response.json())
+                  .then(data => {
+                    if (data.success) {
+                      showNotification('Лог успешно удален', 'success');
+                      loadLogs(logType); // Перезагружаем список логов
+                    } else {
+                      showNotification(data.message || 'Не удалось удалить лог', 'error');
+                    }
+                  })
+                  .catch(error => {
+                    console.error('Ошибка при удалении лога:', error);
+                    showNotification('Произошла ошибка при удалении лога', 'error');
+                  });
+        }
+      }
+
+      // Функция для отображения уведомлений
+      function showNotification(message, type = 'success', title = '') {
+        // Преобразуем тип 'danger' в 'error' для совместимости
+        if (type === 'danger') type = 'error';
+
+        // Используем систему уведомлений
+        return AppNotifications.show(message, type, title);
+      }
+
+      // Инициализация обработчиков событий
+      initTabEventHandlers();
+
+      // Загружаем логи для активной вкладки при загрузке страницы
+      loadLogs(activeTab);
+    });
+</script>
+
+<style>
+  /* Основные стили для страницы логов */
+  .logs-dashboard {
+    padding: 1.5rem;
+    transition: margin-left 0.3s ease;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Стили для заголовка */
+  .header-panel {
+    background-color: #2b2d30 !important;
+    border: 1px solid #343a40;
+    border-radius: 6px;
+  }
+
+  /* Стили для вкладок */
+  .nav-tabs {
+    border-bottom: 1px solid #343a40;
+  }
+
+  .nav-tabs .nav-link {
+    color: #adb5bd;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.75rem 1rem;
+    margin-right: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .nav-tabs .nav-link:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-bottom: 2px solid #495057;
+  }
+
+  .nav-tabs .nav-link.active {
+    color: #fff;
+    background-color: transparent;
+    border-bottom: 2px solid #0d6efd;
+  }
+
+  /* Стили для панели фильтров */
+  .filter-panel {
+    background-color: #2b2d30 !important;
+    border: 1px solid #343a40;
+    border-radius: 6px;
+  }
+
+  .filter-panel .form-control,
+  .filter-panel .form-select,
+  .filter-panel .input-group-text {
+    background-color: #2c3034 !important;
+    border-color: #495057;
+  }
+
+  .filter-panel .form-control:focus,
+  .filter-panel .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+
+  /* Стили для контейнера логов */
+  .logs-container {
+    min-height: 400px;
+    position: relative;
+    background-color: #1e1e1e !important;
+    border: 1px solid #343a40;
+    border-radius: 6px;
+  }
+
+  /* Сетка для логов */
+  .logs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+    width: 100%;
+  }
+
+  /* Стили для карточек логов */
+  .log-card {
+    background-color: #2c3034;
+    border-radius: 6px;
+    border: 1px solid #343a40;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .log-card:hover {
+    border-color: #212529;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+    cursor: pointer;
+  }
+
+  .log-card .card-header {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid #343a40;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    overflow: hidden; /* Добавляем скрытие переполнения */
+  }
+
+  .log-card .card-body {
+    padding: 12px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .log-card .card-footer {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid #343a40;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* Стили для сообщения лога */
+  .message-text {
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    word-break: break-word;
+    max-height: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    color: #e9ecef;
+  }
+
+  /* Стили для времени */
+  .time-badge {
+    font-size: 12px;
+    color: #d6d6d6;
+    display: flex;
+    align-items: center;
+    min-width: 120px; /* Минимальная ширина для времени */
+    flex-shrink: 0; /* Запрещаем сжиматься */
+  }
+
+  .time-badge i {
+    margin-right: 5px;
+  }
+
+  /* Стили для бейджей */
+  .badge-pill {
+    color: white;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    font-weight: 500;
+    margin-bottom: 4px;
+    max-width: 100%; /* Максимальная ширина */
+  }
+
+  .auditory-badge {
+    background-color: #0d6efd;
+  }
+
+  .user-badge {
+    background-color: rgba(76, 76, 76, 0.2);
+    max-width: 100%;
+    overflow: hidden; /* Добавляем скрытие переполнения */
+    text-overflow: ellipsis; /* Добавляем многоточие */
+  }
+
+  .device-badge {
+    background-color: rgba(76, 76, 76, 0.2);
+  }
+
+  .nid-badge {
+    background-color: rgba(76, 76, 76, 0.2);
+  }
+
+  /* Стили для кнопок действий */
+  .action-buttons {
+    display: flex;
+    gap: 6px;
+  }
+
+  .action-buttons .btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  /* Стили для пагинации */
+  .pagination-panel {
+    background-color: #1e1e1e !important;
+    border: 1px solid #343a40;
+    border-radius: 6px;
+  }
+
+  .pagination .page-link {
+    background-color: #2c3034;
+    border-color: #495057;
+    color: #e9ecef;
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .pagination .page-link:hover {
+    background-color: #495057;
+    border-color: #6c757d;
+    color: #fff;
+  }
+
+  .pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+  }
+
+  .pagination .page-item.disabled .page-link {
+    background-color: #2c3034;
+    border-color: #495057;
+    color: #6c757d;
+  }
+
+  /* Стили для разных режимов отображения */
+  /* Режим сетки (по умолчанию) */
+  .logs-grid.view-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+
+  /* Режим списка */
+  .logs-grid.view-list {
+    grid-template-columns: 1fr;
+  }
+
+  .logs-grid.view-list .log-card {
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr) 100px;
+    grid-template-rows: auto;
+    grid-template-areas: "header body footer";
+    align-items: center;
+  }
+
+  .logs-grid.view-list .log-card .card-header {
+    grid-area: header;
+    border-right: 1px solid #343a40;
+    border-bottom: none;
+    height: 100%;
+  }
+
+  .logs-grid.view-list .log-card .card-body {
+    grid-area: body;
+    padding: 12px;
+  }
+
+  .logs-grid.view-list .log-card .card-footer {
+    grid-area: footer;
+    border-left: 1px solid #343a40;
+    border-top: none;
+    height: 100%;
+  }
+
+  /* Режим компактный */
+  .logs-grid.view-compact {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .logs-grid.view-compact .log-card {
+    padding: 0;
+  }
+
+  .logs-grid.view-compact .log-card .card-header {
+    padding: 5px 8px;
+    font-size: 0.85rem;
+  }
+
+  .logs-grid.view-compact .log-card .card-body {
+    padding: 5px 8px;
+    max-height: 60px;
+  }
+
+  .logs-grid.view-compact .log-card .card-footer {
+    padding: 5px 8px;
+  }
+
+  .logs-grid.view-compact .message-text {
+    -webkit-line-clamp: 2;
+    font-size: 12px;
+  }
+
+  /* Модальное окно */
+  .modal-content {
+    background-color: #1e1e1e !important;
+    border: 1px solid #343a40;
+  }
+
+  .modal-header, .modal-footer {
+    border-color: #343a40;
+  }
+
+  /* Стили для тегов в сообщениях */
+  .message-with-tag {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .log-tag-default,
+  .log-tag-action,
+  .log-tag-message,
+  .log-tag-error,
+  .log-tag-warning {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: monospace;
+    margin-bottom: 4px;
+  }
+
+  .log-tag-default {
+    background-color: #495057;
+    color: #e9ecef;
+  }
+
+  .log-tag-action {
+    background-color: #0d6efd;
+    color: white;
+  }
+
+  .log-tag-message {
+    background-color: #6f42c1;
+    color: white;
+  }
+
+  .log-tag-error {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  .log-tag-warning {
+    background-color: #ffc107;
+    color: #212529;
+  }
+
+  .message-content {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #e9ecef;
+  }
+
+  /* Стили для отображения ФИО в одну строку */
+  .single-line {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* Обновленные стили для группы бейджей */
+  .badge-group {
+    display: flex;
+    flex-wrap: nowrap; /* Запрещаем перенос */
+    gap: 6px;
+    justify-content: flex-end;
+    max-width: 60%; /* Уменьшаем максимальную ширину */
+    overflow: hidden; /* Добавляем скрытие переполнения */
+  }
+
+  /* Для мобильных устройств */
+  @media (max-width: 768px) {
+    .logs-dashboard {
+      padding: 1rem;
+    }
+
+    .logs-grid.view-list .log-card {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr auto;
+      grid-template-areas:
+        "header"
+        "body"
+        "footer";
+    }
+
+    .logs-grid.view-list .log-card .card-header {
+      border-right: none;
+      border-bottom: 1px solid #343a40;
+    }
+
+    .logs-grid.view-list .log-card .card-footer {
+      border-left: none;
+      border-top: 1px solid #343a40;
+    }
+
+    .filter-panel .row {
+      flex-direction: column;
+    }
+
+    .filter-panel .col-md-4,
+    .filter-panel .col-md-3,
+    .filter-panel .col-md-2 {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .log-card .card-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .badge-group {
+      margin-top: 6px;
+      justify-content: flex-start;
+      max-width: 100%;
+    }
+
+    .time-badge {
+      min-width: auto;
+    }
+  }
+</style>
+{% endblock %}
