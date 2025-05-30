@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # MySQL база данных
+  mysql:
+    image: mysql:8.0
+    container_name: skudweb_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-skudweb_db}
+      MYSQL_USER: ${MYSQL_USER:-skudweb_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-skudweb_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - skudweb_network
+
+  # phpMyAdmin для управления БД
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: skudweb_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: ${MYSQL_USER:-skudweb_user}
+      PMA_PASSWORD: ${MYSQL_PASSWORD:-skudweb_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - skudweb_network
+
+  # Django веб-приложение
+  web:
+    build: .
+    container_name: skudweb_django
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Ожидаем запуска MySQL...' &&
+        while ! nc -z mysql 3306; do sleep 1; done &&
+        echo 'MySQL запущен!' &&
+        python manage.py migrate &&
+        python manage.py collectstatic --noinput &&
+        gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 myproject.wsgi:application
+      "
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - .:/app
+    environment:
+      - DEBUG=${DEBUG:-False}
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=mysql://${MYSQL_USER:-skudweb_user}:${MYSQL_PASSWORD:-skudweb_password}@mysql:3306/${MYSQL_DATABASE:-skudweb_db}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-skudweb_db}
+      - MYSQL_USER=${MYSQL_USER:-skudweb_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-skudweb_password}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+    depends_on:
+      - mysql
+    networks:
+      - skudweb_network
+
+  # Apache веб-сервер
+  apache:
+    image: httpd:2.4-alpine
+    container_name: skudweb_apache
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./apache/httpd.conf:/usr/local/apache2/conf/httpd.conf
+      - ./apache/vhost.conf:/usr/local/apache2/conf/extra/vhost.conf
+      - static_volume:/var/www/html/static
+      - media_volume:/var/www/html/media
+      - ./ssl:/usr/local/apache2/conf/ssl
+    depends_on:
+      - web
+    networks:
+      - skudweb_network
+
+volumes:
+  mysql_data:
+  static_volume:
+  media_volume:
+
+networks:
+  skudweb_network:
+    driver: bridge
