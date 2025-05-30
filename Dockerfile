@@ -1,41 +1,40 @@
-# Dockerfile для Django проекта SKUDWEB
 FROM python:3.11-slim
 
-# Устанавливаем системные зависимости
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        default-mysql-client \
-        build-essential \
-        default-libmysqlclient-dev \
-        pkg-config \
-        git \
-        curl \
+# Установка системных зависимостей
+RUN apt-get update && apt-get install -y \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config \
+    curl \
+    gettext \
     && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем рабочую директорию
+# Создание пользователя для безопасности
+RUN useradd --create-home --shell /bin/bash app
+
+# Установка рабочей директории
 WORKDIR /app
 
-# Копируем файл зависимостей
-COPY requirement.txt requirements.txt
-
-# Устанавливаем Python зависимости
+# Копирование и установка зависимостей
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Устанавливаем дополнительные зависимости для MySQL
-RUN pip install --no-cache-dir mysqlclient gunicorn python-dotenv
-
-# Копируем весь проект
+# Копирование проекта
 COPY . .
 
-# Создаем директории для статических и медиа файлов
-RUN mkdir -p /app/staticfiles /app/media
+# Создание необходимых директорий
+RUN mkdir -p /app/staticfiles /app/media /app/logs
 
-# Создаем пользователя для запуска приложения
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
-USER appuser
+# Установка прав доступа
+RUN chown -R app:app /app
+USER app
 
-# Открываем порт
+# Сбор статических файлов
+RUN python manage.py collectstatic --noinput --settings=myproject.settings_production
+
+# Открытие порта
 EXPOSE 8000
 
-# Команда по умолчанию
-CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 --workers 3 myproject.wsgi:application"]
+# Команда запуска
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120", "myproject.wsgi:application"]

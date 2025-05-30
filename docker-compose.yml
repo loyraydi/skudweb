@@ -1,99 +1,115 @@
 version: '3.8'
 
 services:
-  # MySQL база данных
+  # MySQL Database
   mysql:
     image: mysql:8.0
     container_name: skudweb_mysql
-    restart: unless-stopped
+    restart: always
     environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-skudweb_root_2024}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-skudweb_db}
       MYSQL_USER: ${MYSQL_USER:-skudweb_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-skudweb_password}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-skudweb_pass_2024}
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d
-    ports:
-      - "3306:3306"
+      - ./mysql-init:/docker-entrypoint-initdb.d
+      - ./mysql-config:/etc/mysql/conf.d
     command: --default-authentication-plugin=mysql_native_password
     networks:
       - skudweb_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
-  # phpMyAdmin для управления БД
+  # phpMyAdmin
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     container_name: skudweb_phpmyadmin
-    restart: unless-stopped
+    restart: always
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
       PMA_USER: ${MYSQL_USER:-skudweb_user}
-      PMA_PASSWORD: ${MYSQL_PASSWORD:-skudweb_password}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      PMA_PASSWORD: ${MYSQL_PASSWORD:-skudweb_pass_2024}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-skudweb_root_2024}
+      PMA_ARBITRARY: 1
+      UPLOAD_LIMIT: 100M
     ports:
-      - "8080:80"
+      - "${PHPMYADMIN_PORT:-8080}:80"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - skudweb_network
 
-  # Django веб-приложение
-  web:
-    build: .
+  # Django Application
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: skudweb_django
-    restart: unless-stopped
-    command: >
-      sh -c "
-        echo 'Ожидаем запуска MySQL...' &&
-        while ! nc -z mysql 3306; do sleep 1; done &&
-        echo 'MySQL запущен!' &&
-        python manage.py migrate &&
-        python manage.py collectstatic --noinput &&
-        gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 myproject.wsgi:application
-      "
-    volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
-      - .:/app
+    restart: always
     environment:
       - DEBUG=${DEBUG:-False}
-      - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=mysql://${MYSQL_USER:-skudweb_user}:${MYSQL_PASSWORD:-skudweb_password}@mysql:3306/${MYSQL_DATABASE:-skudweb_db}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-this-in-production}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${MYSQL_DATABASE:-skudweb_db}
+      - DB_USER=${MYSQL_USER:-skudweb_user}
+      - DB_PASSWORD=${MYSQL_PASSWORD:-skudweb_pass_2024}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-skudweb_db}
-      - MYSQL_USER=${MYSQL_USER:-skudweb_user}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-skudweb_password}
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
+    ports:
+      - "${DJANGO_PORT:-8000}:8000"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - logs_volume:/app/logs
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - skudweb_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Apache веб-сервер
-  apache:
-    image: httpd:2.4-alpine
-    container_name: skudweb_apache
-    restart: unless-stopped
+  # Nginx (для продакшена)
+  nginx:
+    image: nginx:alpine
+    container_name: skudweb_nginx
+    restart: always
     ports:
-      - "80:80"
-      - "443:443"
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
     volumes:
-      - ./apache/httpd.conf:/usr/local/apache2/conf/httpd.conf
-      - ./apache/vhost.conf:/usr/local/apache2/conf/extra/vhost.conf
-      - static_volume:/var/www/html/static
-      - media_volume:/var/www/html/media
-      - ./ssl:/usr/local/apache2/conf/ssl
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - ./ssl:/etc/nginx/ssl
     depends_on:
-      - web
+      - django
     networks:
       - skudweb_network
 
 volumes:
   mysql_data:
+    driver: local
   static_volume:
+    driver: local
   media_volume:
+    driver: local
+  logs_volume:
+    driver: local
 
 networks:
   skudweb_network:
